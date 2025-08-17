@@ -1,0 +1,78 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SO Player</title>
+<style>
+  html,body{margin:0;background:transparent;overflow:hidden}
+  #wrap{position:fixed;inset:0}
+  #media, #img{
+    position:absolute; inset:0; width:100vw; height:100vh;
+    object-fit:cover; object-position:center; border:0;
+  }
+  #img{display:none; image-orientation:from-image}
+  #name{
+    position:absolute; left:3vw; bottom:3vh; right:3vw;
+    color:#fff; font:700 3.2vh/1.1 system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    text-shadow: 0 2px 20px #000c, 0 1px 6px #000a;
+    letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    opacity:0; transform:translateY(10px); transition:.35s ease;
+  }
+  .show #name{opacity:1; transform:none}
+</style>
+<div id="wrap">
+  <iframe id="media" allow="autoplay; fullscreen" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+  <img id="img" alt="">
+  <div id="name"></div>
+</div>
+<script>
+(function(){
+  const qs = new URLSearchParams(location.search);
+  const user = (qs.get('user')||'').trim();
+  const clip = (qs.get('clip')||'').trim();
+  const img  = (qs.get('img') ||'').trim();
+  const fit  = (qs.get('fit') ||'cover').toLowerCase(); // cover | contain
+  const dn   = (qs.get('dn')  ||'').trim();
+  const parent = location.hostname; // required for Twitch embeds
+
+  const media = document.getElementById('media');
+  const image = document.getElementById('img');
+  const name  = document.getElementById('name');
+  const wrap  = document.getElementById('wrap');
+
+  // apply fit
+  media.style.objectFit = (fit==='contain'?'contain':'cover');
+  image.style.objectFit = media.style.objectFit;
+
+  const setName = (dn||user);
+  if (setName) name.textContent = `Check out ${setName}!`;
+
+  // Try Twitch clip if provided or detect slug from full URL
+  function twitchClipSrc(slug){
+    const s = slug.replace(/^https?:\/\/clips\.twitch\.tv\/(embed\?clip=)?/i,'').replace(/\/.*/,'');
+    return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(s)}&parent=${encodeURIComponent(parent)}&autoplay=true&muted=true`;
+  }
+
+  let used = false;
+  if (clip) {
+    if (/clips\.twitch\.tv/i.test(clip) || /^[A-Za-z0-9]+$/.test(clip)) {
+      media.src = twitchClipSrc(clip);
+      used = true;
+    } else if (/youtu\.?be/.test(clip)) {
+      // simple YouTube embed (muted autoplay)
+      let id = clip;
+      const m = clip.match(/(?:v=|\/embed\/|youtu\.be\/)([^&?/]+)/);
+      if (m) id = m[1];
+      media.src = `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0`;
+      used = true;
+    }
+  }
+
+  if (!used && img){
+    media.style.display='none';
+    image.style.display='block';
+    image.src = img + (img.includes('?')?'&':'?') + 't=' + Date.now();
+  }
+
+  requestAnimationFrame(()=> wrap.classList.add('show'));
+})();
+</script>
