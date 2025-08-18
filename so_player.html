@@ -3,138 +3,133 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>SO Player</title>
+<title>SO Player — GIF only</title>
 <style>
   :root{
-    --radius:16px;
-    --bannerBg: rgba(32,32,32,.92);
-    --bannerText:#fff;
-    --muted:#d6d6d6;
+    /* feel free to tweak */
+    --radius: clamp(12px, 3vmin, 28px);     /* rounded corners for GIF */
     --shadow: 0 14px 38px rgba(0,0,0,.35);
-    --overscan: 4%; /* push video under rounded border */
+    --chipBg: rgba(32,32,32,.92);
+    --chipText: #fff;
+    --chipMuted: #d8d8d8;
   }
+
   html,body{height:100%;width:100%;margin:0;background:transparent;overflow:hidden;
-            font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;}
-  #stage{position:fixed;inset:0;background:transparent}
+            font-family: system-ui, Segoe UI, Roboto, Inter, Arial, sans-serif;}
 
-  /* video box */
-  #playerBox{
-    position:absolute;left:50%;top:6vh;transform:translateX(-50%);
-    width:min(92vw,160vh);height:min(78vh,51.75vw);
-    border-radius:var(--radius);overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
-    transition:background .18s ease, box-shadow .18s ease;
+  #stage{position:fixed; inset:0; background:transparent}
+
+  /* --- GIF box (centered, rounded, no overscan) --- */
+  #gifBox{
+    position:absolute; left:50%; top:6vh; transform:translateX(-50%);
+    width:min(92vw, 160vh);               /* keep ~16:9 limits without forcing it */
+    height:min(78vh, 51.75vw);
+    border-radius:var(--radius);
+    overflow:hidden;
+    box-shadow: var(--shadow);
+    display:flex; align-items:center; justify-content:center;
+    background: transparent;              /* no dark plate; the GIF edges are rounded */
   }
-  #playerBox[data-mode="video"]{background:rgba(0,0,0,.65);box-shadow:var(--shadow)}
-  #playerBox[data-mode="gif"]  {background:transparent;box-shadow:none}
-
-  #player{position:relative;width:100%;height:100%}
-  #twitch,#clipFrame,#gif{width:100%;height:100%}
-
-  /* overscan video */
-  #twitch{position:absolute;inset:0}
-  #twitch iframe{position:absolute!important;
-    left:calc(-1*var(--overscan));top:calc(-1*var(--overscan));
-    width:calc(100% + var(--overscan)*2);height:calc(100% + var(--overscan)*2);
-    border:0}
-
-  #clipFrame{position:absolute;border:0;display:none;
-    left:calc(-1*var(--overscan));top:calc(-1*var(--overscan));
-    width:calc(100% + var(--overscan)*2);height:calc(100% + var(--overscan)*2)}
-
-  /* GIF stays clean (no overscan to avoid blur) */
-  #gif{display:none;object-fit:contain;background:transparent}
-
-  /* banner */
-  #banner{
-    position:absolute;left:50%;bottom:4.5vh;transform:translateX(-50%);
-    display:flex;align-items:center;gap:clamp(12px,1.8vw,28px);
-    padding:clamp(14px,1.4vw,26px) clamp(18px,2.2vw,34px);
-    background:var(--bannerBg);color:var(--bannerText);
-    border-radius:14px;box-shadow:var(--shadow);max-width:min(88vw,1400px);
-    pointer-events:none
+  #gif{
+    width:100%; height:100%;
+    object-fit: contain;                  /* don’t upscale/pixelate */
+    border-radius:var(--radius);          /* dynamic curved edges */
+    display:block;
+    background: transparent;
   }
-  #avatarWrap{width:clamp(64px,8vw,112px);height:clamp(64px,8vw,112px);
-    border-radius:999px;overflow:hidden;flex:0 0 auto;
-    border:clamp(2px,.5vw,4px) solid rgba(0,0,0,.35);
-    box-shadow:inset 0 0 0 2px rgba(255,255,255,.08)}
-  #avatar{width:100%;height:100%;object-fit:cover;display:block}
 
-  #textCol{display:flex;flex-direction:column}
-  #name{font-weight:900;font-size:clamp(28px,4vw,64px);line-height:1.05;letter-spacing:.2px}
-  #tag{font-size:clamp(16px,2vw,28px);color:var(--muted);margin-top:clamp(2px,.3vw,6px)}
+  /* --- Bottom “O=” banner: big avatar + slightly smaller chip on the side --- */
+  #chipWrap{
+    position:absolute; left:50%; bottom:4.5vh; transform:translateX(-50%);
+    display:flex; align-items:center; gap:clamp(12px, 1.6vw, 24px);
+    pointer-events:none;
+  }
+  /* Big round avatar (“O”) */
+  #avatarWrap{
+    width: clamp(96px, 12vw, 160px);
+    height: clamp(96px, 12vw, 160px);
+    border-radius: 999px;
+    overflow:hidden;
+    border: clamp(2px, .5vw, 4px) solid rgba(0,0,0,.35);
+    box-shadow: inset 0 0 0 2px rgba(255,255,255,.08), var(--shadow);
+    flex: 0 0 auto;
+    background:#222;
+  }
+  #avatar{
+    width:100%; height:100%;
+    object-fit: cover;
+    display:block;
+  }
+
+  /* “=” chip (a bit smaller than avatar’s height) */
+  #chip{
+    height: clamp(64px, 8.2vw, 110px);          /* smaller than the avatar */
+    max-width: min(70vw, 1200px);
+    padding: 0 clamp(18px, 2.2vw, 34px);
+    display:flex; align-items:center;
+    border-radius: 14px;
+    background: var(--chipBg);
+    color: var(--chipText);
+    box-shadow: var(--shadow);
+  }
+  #name{
+    font-weight: 900;
+    font-size: clamp(26px, 3.8vw, 58px);
+    line-height: 1.02; letter-spacing: .2px;
+  }
+  #tag{
+    font-size: clamp(14px, 2vw, 26px);
+    color: var(--chipMuted);
+    margin-left: clamp(10px, 1.5vw, 18px);
+  }
+
+  /* Small stack when canvas is narrow */
+  @media (max-width: 560px){
+    #chip{padding: 0 14px}
+    #tag{display:none}
+  }
 </style>
 </head>
 <body>
-<div id="stage">
-  <div id="playerBox" data-mode="gif">
-    <div id="player">
-      <div id="twitch" style="display:none"></div>
-      <iframe id="clipFrame" allow="autoplay; fullscreen; picture-in-picture" style="display:none"></iframe>
-      <img id="gif" alt="fallback" />
-    </div>
-  </div>
+  <div id="stage">
+    <div id="gifBox"><img id="gif" alt="shoutout-gif" /></div>
 
-  <div id="banner" role="complementary" aria-live="polite">
-    <div id="avatarWrap"><img id="avatar" src="" alt="avatar"></div>
-    <div id="textCol">
-      <div id="name">Friend</div>
-      <div id="tag">Check out Friend!</div>
+    <!-- O= banner -->
+    <div id="chipWrap" role="complementary" aria-live="polite">
+      <div id="avatarWrap"><img id="avatar" alt="avatar"></div>
+      <div id="chip">
+        <div id="name">Friend</div>
+        <div id="tag">Check out Friend!</div>
+      </div>
     </div>
   </div>
-</div>
 
 <script>
 (function(){
-  /* -------- params (with aliases) -------- */
+  /* ---- params with simple aliases ---- */
   const qs = new URLSearchParams(location.search);
-  const ALIAS = {
-    name:['name','displayName','user','username','target'],
-    profile:['profile','avatar','pfp','image','img'],
-    clip:['clip','clipId','slug'],
-    vid:['vid','video','videoId','vod'],
-    vol:['vol','volume'],
-    dur:['dur','duration','ms'],
-    text:['text','banner','subtitle'],
-    gif:['gif','fallback','fallbackGif'],
-    fb:['fb','fallback'] // 'soft' (default) or 'hard'
-  };
-  const val = (k, d='')=>{
-    for (const key of (ALIAS[k]||[k])) if (qs.has(key)) return qs.get(key) || d;
+  const alias = (keys, d='')=>{
+    for (const k of (Array.isArray(keys)?keys:[keys])) if (qs.has(k)) return qs.get(k)||d;
     return d;
   };
-  const num = (k, d)=>{ const n = parseFloat(val(k,'')); return Number.isFinite(n) ? n : d; };
 
   const P = {
-    name: val('name','Friend'),
-    profile: val('profile',''),
-    clip: val('clip',''),
-    vid: val('vid',''),                    // highlight/video fallback (will try, then GIF)
-    vol: Math.max(0, Math.min(1, num('vol', 0.35))),
-    dur: (()=>{ const d=parseInt(val('dur',''),10); return Number.isFinite(d)&&d>0?d:12000; })(),
-    text: val('text',''),
-    gif: val('gif',''),
-    fb: (val('fb','soft')||'soft').toLowerCase() // 'soft' | 'hard'
+    name:    alias(['name','displayName','user','username','target'], 'Friend'),
+    profile: alias(['profile','avatar','pfp','image','img'], ''),
+    text:    alias(['text','banner','subtitle'], ''),
+    // GIF selection: explicit url OR "random"
+    gif:     alias(['gif','fallback','fallbackGif'], 'random'),
+    // duration (ms) before Streamer.bot hides the source (default 6000)
+    dur:     (()=>{ const n = parseInt(alias(['dur','duration','ms'], ''), 10);
+                    return Number.isFinite(n)&&n>0 ? n : 6000; })()
   };
 
-  /* -------- banner -------- */
+  // banner content
   document.getElementById('name').textContent = P.name;
   document.getElementById('tag').textContent  = P.text || `Check out ${P.name}!`;
   if (P.profile) document.getElementById('avatar').src = P.profile;
 
-  /* -------- parents for Twitch embeds -------- */
-  const host = location.hostname || 'erzombie.github.io';
-  const parents = [host,'erzombie.github.io','localhost','127.0.0.1']
-    .filter((v,i,a)=>v && a.indexOf(v)===i);
-  const parentQS = parents.map(p=>'parent='+encodeURIComponent(p)).join('&');
-
-  /* -------- elements -------- */
-  const playerBox = document.getElementById('playerBox');
-  const twDiv = document.getElementById('twitch');
-  const clipI = document.getElementById('clipFrame');
-  const gif   = document.getElementById('gif');
-
-  /* -------- GIF pool & helpers -------- */
+  // random GIF pool (edit to taste)
   const gifPool = [
     '/stream-player-repo/assets/hellothere.gif',
     '/stream-player-repo/assets/hellothere2.gif',
@@ -143,90 +138,15 @@
     '/stream-player-repo/assets/elmo.gif',
     '/stream-player-repo/assets/lick-anime.gif'
   ];
-  const pickGif = (arg)=> (!arg || arg==='random')
-    ? gifPool[Math.floor(Math.random()*gifPool.length)] : arg;
+  const pickGif = (arg)=> arg && arg !== 'random'
+      ? arg
+      : gifPool[Math.floor(Math.random()*gifPool.length)];
 
-  let hideTimer = null;
-  const startTimer = (ms)=>{
-    if (hideTimer) clearTimeout(hideTimer);
-    hideTimer = setTimeout(()=>{/* SB hides the source */}, ms);
-  };
+  // show GIF immediately
+  document.getElementById('gif').src = pickGif(P.gif);
 
-  const showGif = (arg)=>{
-    playerBox.setAttribute('data-mode','gif');
-    // close all players first
-    clipI.src = 'about:blank';
-    clipI.style.display = 'none';
-    twDiv.innerHTML = '';
-    twDiv.style.display = 'none';
-
-    gif.src = pickGif(arg);
-    gif.style.display = 'block';
-  };
-
-  /* ---------- Prefer CLIP -> VIDEO(highlight) -> GIF ---------- */
-
-  if (P.clip) {
-    // try clip muted + autoplay
-    playerBox.setAttribute('data-mode','video');
-    twDiv.style.display = 'none';
-    gif.style.display   = 'none';
-
-    clipI.style.display = 'block';
-    clipI.src =
-      `https://clips.twitch.tv/embed?clip=${encodeURIComponent(P.clip)}` +
-      `&autoplay=true&muted=true${parentQS?`&${parentQS}`:''}`;
-
-    if (P.fb === 'hard') {
-      // force GIF after 2s to avoid stuck "click to play" overlays
-      setTimeout(()=>{ showGif(P.gif||'random'); startTimer(6000); }, 2000);
-    } else {
-      // soft mode: let the clip play for full duration
-      startTimer(P.dur);
-    }
-    return;
-  }
-
-  if (P.vid) {
-    // try highlight/video via embed API; if it never becomes ready, fall back after 2s
-    playerBox.setAttribute('data-mode','video');
-    clipI.style.display = 'none';
-    gif.style.display   = 'none';
-
-    const s = document.createElement('script');
-    s.src = 'https://player.twitch.tv/js/embed/v1.js';
-    s.onload = ()=>{
-      let ready = false;
-      try {
-        const embed = new Twitch.Embed('twitch', {
-          width:'100%', height:'100%',
-          video: P.vid,
-          autoplay:true, muted:true,
-          allowfullscreen:true,
-          parent: parents
-        });
-        twDiv.style.display = 'block';
-
-        embed.addEventListener(Twitch.Embed.VIDEO_READY, ()=>{
-          ready = true;
-          try{
-            const player = embed.getPlayer();
-            player.setMuted(true);
-            player.play();
-          }catch{}
-          startTimer(P.dur);
-        });
-      } catch {}
-      setTimeout(()=>{ if (!ready){ showGif(P.gif||'random'); startTimer(6000); }}, 2000);
-    };
-    s.onerror = ()=>{ showGif(P.gif||'random'); startTimer(6000); };
-    document.body.appendChild(s);
-    return;
-  }
-
-  // nothing → gif
-  showGif(P.gif||'random');
-  startTimer(6000);
+  // simple timer: SB hides the browser source afterwards
+  let t = setTimeout(()=>{/* no-op */}, P.dur);
 })();
 </script>
 </body>
