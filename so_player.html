@@ -1,169 +1,169 @@
 <!doctype html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>SO Player</title>
+<meta charset="utf-8" />
+<title>Shoutout Player</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 
 <style>
   :root{
-    --bg: rgba(60,60,60,.95);
+    --bg: transparent;
+    --panel: rgba(62,62,62,.94);
     --text: #fff;
-    --sub: #dcdcdc;
-    --radius: 16px;
-    --shadow: 0 14px 40px rgba(0,0,0,.35);
+    --text-sub: #ddd;
+    --shadow: 0 16px 48px rgba(0,0,0,.35);
+    --radius: 18px;
   }
-  html,body{margin:0;background:transparent;overflow:hidden;height:100%}
 
-  /* ======== VIDEO BOX (top-left) ======== */
-  #videoWrap{
-    position:fixed; top:24px; left:24px;
-    width:min(36vw, 640px);
-    aspect-ratio:16/9;
-    background:#222;
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    overflow:hidden;
-    display:none;                  /* shown only when clip exists */
+  html, body { height:100%; }
+  body{
+    margin:0;
+    background:var(--bg);
+    font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
   }
-  #videoWrap iframe{width:100%;height:100%;border:0;display:block}
 
-  /* ======== GIF FALLBACK (centered on canvas) ======== */
-  #gifWrap{
-    position:fixed; inset:0; display:none;
-    align-items:center; justify-content:center;
+  /* Stage */
+  #root{
+    position:fixed; inset:0;
+    display:flex; align-items:center; justify-content:center;
     pointer-events:none;
   }
-  #gifWrap img{
-    max-width:min(48vw, 720px);
+  /* Column is sized so the clip looks big in 1080p browser source */
+  #col{
+    width:min(90vw, 96vh);          /* responsive width */
+    max-width: 1200px;              /* cap for ultra-wide scenes */
+    display:flex; flex-direction:column; align-items:center; gap:16px;
+  }
+
+  /* Video box */
+  #vidBox{
     width:100%;
-    height:auto;
+    aspect-ratio:16 / 9;
+    background:#000;
     border-radius:var(--radius);
-    box-shadow:var(--shadow);
-    object-fit:cover;
-  }
-
-  /* ======== BANNER ======== */
-  #banner{
-    display:flex; align-items:center; gap:16px;
-    padding:14px 18px;
-    background:var(--bg);
-    color:var(--text);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow);
     overflow:hidden;
-    max-width:min(92vw, 1200px);
+    box-shadow:var(--shadow);
+    position:relative;
   }
-  /* default: fixed bottom-center (used in gif/no-clip mode) */
-  #banner.fixed{
-    position:fixed; left:50%; transform:translateX(-50%);
-    bottom:24px;
-  }
-  /* when inside video: absolute bottom-center of the video box */
-  #banner.inVideo{
-    position:absolute; left:50%; transform:translateX(-50%);
-    bottom:10px;
+  #player, #gif {
+    position:absolute; inset:0;
+    width:100%; height:100%;
+    object-fit:cover;
+    display:none;
   }
 
+  /* Bottom banner directly under the video */
+  #banner{
+    pointer-events:auto;           /* let OBS click-through ignore it anyway */
+    display:flex; align-items:center; gap:18px;
+    background:var(--panel);
+    color:var(--text);
+    padding:14px 20px;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+  }
   #avatar{
-    width:68px;height:68px;flex:0 0 auto;
+    width:72px; height:72px;
     border-radius:50%;
-    background:#222 center/cover no-repeat;
-    border:4px solid rgba(0,0,0,.28);
+    background:#1f1f1f;
+    box-shadow: inset 0 0 0 4px rgba(0,0,0,.35);
+    flex:0 0 auto;
   }
-  #name{font:700 42px/1.05 system-ui, Segoe UI, Roboto, Arial, sans-serif; letter-spacing:.5px}
-  #tag {font:500 20px/1.2  system-ui, Segoe UI, Roboto, Arial, sans-serif; color:var(--sub); margin-top:10px}
-  #texts{display:flex;flex-direction:column}
+  #name{
+    font-weight:900;
+    font-size:42px;
+    line-height:1;
+    letter-spacing:.3px;
+  }
+  #sub{
+    margin-top:4px;
+    font-weight:600;
+    font-size:22px;
+    color:var(--text-sub);
+    line-height:1.1;
+  }
+  .vcol{ display:flex; flex-direction:column; }
 
-  @media (max-width:900px){
-    #name{font-size:34px}
-    #tag {font-size:18px}
-    #avatar{width:60px;height:60px}
-  }
+  /* gentle fade */
+  .show{ animation:fade .25s ease-out forwards; }
+  @keyframes fade { from{opacity:0} to{opacity:1} }
 </style>
 
-<!-- Video box -->
-<div id="videoWrap" aria-label="clip">
-  <iframe id="tw" allow="autoplay" title="Twitch Clip"></iframe>
-</div>
+<div id="root">
+  <div id="col">
+    <div id="vidBox">
+      <div id="player"></div>
+      <img id="gif" alt="placeholder gif"/>
+    </div>
 
-<!-- GIF fallback (centered) -->
-<div id="gifWrap"><img id="gif" alt=""></div>
-
-<!-- Banner (moved into videoWrap when clip exists) -->
-<div id="banner" class="fixed">
-  <div id="avatar"></div>
-  <div id="texts">
-    <div id="name">Friend</div>
-    <div id="tag">Check out Friend!</div>
+    <div id="banner" class="show">
+      <img id="avatar" alt="avatar"/>
+      <div class="vcol">
+        <div id="name">Streamer</div>
+        <div id="sub">Check out Streamer!</div>
+      </div>
+    </div>
   </div>
 </div>
 
 <script>
 (function(){
   const qs = new URLSearchParams(location.search);
-  const name     = (qs.get('name')    || 'Friend').trim();
-  const profile  = (qs.get('profile') || '').trim();
-  const clipSlug = (qs.get('clip')    || '').trim();       // Twitch clip slug
-  const vol      = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0.35')));
-  const dur      = parseInt(qs.get('dur')||'0',10) || 0;   // ms (optional)
-  const text     = (qs.get('text')    || `Check out ${name}!`).trim();
-  const fallback = (qs.get('fallback')|| 'assets/so_fallback.gif').trim(); // put a gif in repo
+  const name    = (qs.get('name') || 'Friend').trim();
+  const profile = (qs.get('profile') || '').trim();
+  const clip    = (qs.get('clip') || '').trim();      // Twitch clip slug (e.g. Polite…)
+  const gifUrl  = (qs.get('gif') || '').trim();       // optional GIF fallback
+  const vol     = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0.35') || 0.35));
+  const parent  = location.hostname || 'localhost';   // Twitch parent requirement
 
-  // banner text & avatar
+  // Fill banner
   document.getElementById('name').textContent = name;
-  document.getElementById('tag').textContent  = text;
-  if (profile) document.getElementById('avatar').style.backgroundImage = `url("${profile}")`;
+  document.getElementById('sub').textContent  = 'Check out ' + name + '!';
+  const avatar = document.getElementById('avatar');
+  if (profile) { avatar.src = profile; avatar.classList.add('show'); }
+  else { avatar.style.opacity = .65; }
 
-  const videoWrap = document.getElementById('videoWrap');
-  const banner    = document.getElementById('banner');
-  const tw        = document.getElementById('tw');
-  const gifWrap   = document.getElementById('gifWrap');
-  const gif       = document.getElementById('gif');
+  const playerHost = document.getElementById('player');
+  const gif = document.getElementById('gif');
 
-  // Helper: switch banner into video or fixed on screen
-  function useBannerInVideo(){
-    banner.classList.remove('fixed');
-    banner.classList.add('inVideo');
-    videoWrap.appendChild(banner);
-  }
-  function useBannerFixed(){
-    banner.classList.remove('inVideo');
-    banner.classList.add('fixed');
-    document.body.appendChild(banner);
+  function showGif() {
+    if (gifUrl) { gif.src = gifUrl; gif.style.display = 'block'; gif.classList.add('show'); }
   }
 
-  if (clipSlug){
-    // Show video + move banner into it
-    const parents = [location.hostname, 'localhost'];
-    const p = parents.map(x => `parent=${encodeURIComponent(x)}`).join('&');
-    const muted = (vol === 0) ? 'true' : 'false';
+  if (clip){
+    // Use Twitch Player API so we can set volume
+    const s = document.createElement('script');
+    s.src = "https://player.twitch.tv/js/embed/v1.js";
+    s.onload = () => {
+      try{
+        const p = new Twitch.Player("player", {
+          width: "100%",
+          height: "100%",
+          clip,
+          autoplay: true,
+          muted: false,              // we will try with sound; OBS generally allows this
+          parent: [parent]
+        });
+        playerHost.style.display = 'block'; playerHost.classList.add('show');
 
-    tw.src = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(clipSlug)}&autoplay=true&muted=${muted}&${p}`;
-    videoWrap.style.display = 'block';
-    useBannerInVideo();
+        // Set volume once ready; if autoplay fails, Twitch will still render with a play button
+        p.addEventListener(Twitch.Player.READY, () => {
+          try { p.setVolume(vol); } catch {}
+        });
 
-    // If the embed doesn't load in time, fall back to GIF (center screen) + fixed banner
-    let safety = setTimeout(() => {
-      videoWrap.style.display = 'none';
-      if (fallback){
-        gif.src = fallback; gifWrap.style.display = 'flex';
-        useBannerFixed();
+        // If the player errors or never starts, fall back to GIF after a short grace period
+        let started = false;
+        const fallTimer = setTimeout(() => { if(!started) { try{ p.pause(); }catch{} showGif(); } }, 2500);
+        p.addEventListener(Twitch.Player.PLAY, () => { started = true; clearTimeout(fallTimer); });
+        p.addEventListener(Twitch.Player.ONLINE, () => { started = true; clearTimeout(fallTimer); });
+        p.addEventListener(Twitch.Player.ERROR,  () => { showGif(); });
+      }catch(e){
+        showGif();
       }
-    }, 2500);
-    tw.addEventListener('load', () => clearTimeout(safety));
-  } else {
-    // No clip → show centered GIF (if provided) + fixed banner
-    if (fallback){
-      gif.src = fallback; gifWrap.style.display = 'flex';
-    }
-    useBannerFixed();
-  }
-
-  // Soft auto-fade if a duration is provided (OBS still hides via C#)
-  if (dur > 0){
-    setTimeout(() => {
-      document.body.style.transition = 'opacity .25s ease';
-      document.body.style.opacity = '0';
-    }, dur);
+    };
+    s.onerror = showGif;
+    document.head.appendChild(s);
+  }else{
+    // No clip provided: show GIF center (if provided) and keep the banner
+    showGif();
   }
 })();
 </script>
