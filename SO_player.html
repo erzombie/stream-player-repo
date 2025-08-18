@@ -1,78 +1,133 @@
 <!doctype html>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta charset="utf-8" />
 <title>SO Player</title>
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self' https://embed.twitch.tv https://clips.twitch.tv https://static-cdn.jtvnw.net; img-src * data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' https://embed.twitch.tv; frame-src https://clips.twitch.tv https://player.twitch.tv"
+/>
 <style>
-  html,body{margin:0;background:transparent;overflow:hidden}
-  #wrap{position:fixed;inset:0}
-  #media, #img{
-    position:absolute; inset:0; width:100vw; height:100vh;
-    object-fit:cover; object-position:center; border:0;
+  :root { --pad: 14px; --radius: 18px; --bg: rgba(0,0,0,.55); --text: #fff; }
+  html, body { height: 100%; margin:0; background: transparent; overflow:hidden; }
+  * { box-sizing: border-box; }
+  #card { position: fixed; inset: 0; display:flex; flex-direction: column; gap: 10px; padding: var(--pad); pointer-events:none; }
+  /* video area */
+  #playerWrap { position: relative; flex: 1 1 auto; min-height: 40vh; border-radius: var(--radius); overflow:hidden; background: rgba(0,0,0,.25); }
+  #player, #poster {
+    position:absolute; inset:0; width:100%; height:100%; border:0; display:block; object-fit:cover;
   }
-  #img{display:none; image-orientation:from-image}
-  #name{
-    position:absolute; left:3vw; bottom:3vh; right:3vw;
-    color:#fff; font:700 3.2vh/1.1 system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    text-shadow: 0 2px 20px #000c, 0 1px 6px #000a;
-    letter-spacing:.3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    opacity:0; transform:translateY(10px); transition:.35s ease;
+  /* meta bar */
+  #meta {
+    display:flex; align-items:center; gap: 14px;
+    background: var(--bg); color: var(--text); border-radius: var(--radius);
+    padding: 10px 14px; min-height: 78px; backdrop-filter: blur(6px);
   }
-  .show #name{opacity:1; transform:none}
+  #avatar {
+    width:64px; height:64px; border-radius:50%; flex:0 0 auto; object-fit:cover;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.15);
+  }
+  #who { display:flex; flex-direction:column; line-height:1.2 }
+  #name { font: 700 28px/1.2 system-ui, Segoe UI, Roboto, Arial, sans-serif; text-shadow: 0 2px 6px rgba(0,0,0,.45); }
+  #msg  { font: 500 18px/1.25 system-ui, Segoe UI, Roboto, Arial, sans-serif; opacity:.95; }
+  /* show/hide helpers */
+  .hidden { display:none !important; }
 </style>
-<div id="wrap">
-  <iframe id="media" allow="autoplay; fullscreen" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
-  <img id="img" alt="">
-  <div id="name"></div>
+
+<div id="card">
+  <div id="playerWrap">
+    <div id="player"></div>         <!-- Twitch embed goes here -->
+    <img id="poster" class="hidden" alt="Poster"> <!-- fallback (profile image or nothing) -->
+  </div>
+
+  <div id="meta">
+    <img id="avatar" alt="Avatar" />
+    <div id="who">
+      <div id="name"></div>
+      <div id="msg"></div>
+    </div>
+  </div>
 </div>
+
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
 <script>
 (function(){
   const qs = new URLSearchParams(location.search);
-  const user = (qs.get('user')||'').trim();
-  const clip = (qs.get('clip')||'').trim();
-  const img  = (qs.get('img') ||'').trim();
-  const fit  = (qs.get('fit') ||'cover').toLowerCase(); // cover | contain
-  const dn   = (qs.get('dn')  ||'').trim();
-  const parent = location.hostname; // required for Twitch embeds
+  const name    = (qs.get('name')    || '').trim();
+  const profile = (qs.get('profile') || '').trim();
+  let   clipId  = (qs.get('clipId')  || '').trim();
+  const clipUrl = (qs.get('clip')    || '').trim();
+  const vol     = Math.max(0, Math.min(1, parseFloat(qs.get('vol') || '0.3')));
+  const msg     = (qs.get('msg') || (name ? `Check out ${name}!` : '')).trim();
 
-  const media = document.getElementById('media');
-  const image = document.getElementById('img');
-  const name  = document.getElementById('name');
-  const wrap  = document.getElementById('wrap');
+  // UI fill
+  document.getElementById('name').textContent = name || '';
+  document.getElementById('msg').textContent  = msg  || '';
+  const avatar = document.getElementById('avatar');
+  if (profile) avatar.src = profile;
 
-  // apply fit
-  media.style.objectFit = (fit==='contain'?'contain':'cover');
-  image.style.objectFit = media.style.objectFit;
-
-  const setName = (dn||user);
-  if (setName) name.textContent = `Check out ${setName}!`;
-
-  // Try Twitch clip if provided or detect slug from full URL
-  function twitchClipSrc(slug){
-    const s = slug.replace(/^https?:\/\/clips\.twitch\.tv\/(embed\?clip=)?/i,'').replace(/\/.*/,'');
-    return `https://clips.twitch.tv/embed?clip=${encodeURIComponent(s)}&parent=${encodeURIComponent(parent)}&autoplay=true&muted=true`;
+  // Try to get a clip slug from URL if clipId not provided
+  function slugFromUrl(u){
+    try{
+      const h = new URL(u);
+      // https://clips.twitch.tv/<slug>
+      if (h.hostname.includes('clips.twitch.tv')) {
+        return h.pathname.replace(/^\/+/,'').split('/')[0] || '';
+      }
+      // https://www.twitch.tv/<user>/clip/<slug>
+      if (h.pathname.includes('/clip/')) {
+        const i = h.pathname.lastIndexOf('/clip/');
+        return i>=0 ? h.pathname.substring(i+6).split('/')[0] : '';
+      }
+    }catch(_){}
+    return '';
   }
+  if (!clipId && clipUrl) clipId = slugFromUrl(clipUrl);
 
-  let used = false;
-  if (clip) {
-    if (/clips\.twitch\.tv/i.test(clip) || /^[A-Za-z0-9]+$/.test(clip)) {
-      media.src = twitchClipSrc(clip);
-      used = true;
-    } else if (/youtu\.?be/.test(clip)) {
-      // simple YouTube embed (muted autoplay)
-      let id = clip;
-      const m = clip.match(/(?:v=|\/embed\/|youtu\.be\/)([^&?/]+)/);
-      if (m) id = m[1];
-      media.src = `https://www.youtube.com/embed/${encodeURIComponent(id)}?autoplay=1&mute=1&controls=0&modestbranding=1&rel=0`;
-      used = true;
+  // If no clip -> hide player, show a "poster" image (profile)
+  const playerWrap = document.getElementById('playerWrap');
+  const poster = document.getElementById('poster');
+
+  if (!clipId){
+    if (profile) {
+      poster.src = profile;
+      poster.classList.remove('hidden');
     }
+    // No clip – we’re done (meta bar still shows)
+    return;
   }
 
-  if (!used && img){
-    media.style.display='none';
-    image.style.display='block';
-    image.src = img + (img.includes('?')?'&':'?') + 't=' + Date.now();
-  }
+  // Twitch embed
+  const parentHost = location.hostname;
+  let embed;
+  try{
+    embed = new Twitch.Embed("player", {
+      width: "100%",
+      height: "100%",
+      clip: clipId,
+      autoplay: true,
+      muted: vol <= 0,
+      controls: false,
+      parent: [parentHost]
+    });
 
-  requestAnimationFrame(()=> wrap.classList.add('show'));
+    embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+      try {
+        const p = embed.getPlayer();
+        if (typeof p.setVolume === 'function') p.setVolume(vol);
+        p.play();
+      } catch(_){}
+    });
+
+    // If Twitch fails (e.g., removed clip), fall back to poster image
+    const failSafe = setTimeout(() => {
+      // If nothing rendered yet, show poster
+      const ifr = playerWrap.querySelector('iframe');
+      if (!ifr || !ifr.contentWindow) {
+        if (profile) { poster.src = profile; poster.classList.remove('hidden'); }
+      }
+    }, 1800);
+  }catch(e){
+    // Total failure – show poster
+    if (profile) { poster.src = profile; poster.classList.remove('hidden'); }
+  }
 })();
 </script>
