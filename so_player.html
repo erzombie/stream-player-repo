@@ -94,128 +94,161 @@
 
 <script>
 (function(){
+  /* ---------- tolerant param parser + debug ---------- */
   const qs = new URLSearchParams(location.search);
-  const name    = qs.get('name')    || 'Friend';
-  const profile = qs.get('profile') || '';
-  const clipId  = qs.get('clip')    || '';
-  const vodId   = qs.get('vod')     || '';
-  const vodStart= qs.get('vodStart')|| ''; // seconds
-  const vol     = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0.35') || 0.35));
-  const durMs   = Math.max(1000, parseInt(qs.get('dur')||'12000', 10));
-  const gifArg  = qs.get('gif') || '';     // "", "random", or an explicit path
+  const ALIAS = {
+    name:    ['name','displayName','user','username','target'],
+    profile: ['profile','avatar','pfp','image','img'],
+    clip:    ['clip','clipId','slug'],
+    vod:     ['vod','video','videoId'],
+    vodStart:['vodStart','start','time'],
+    gif:     ['gif','fallback','fallbackGif'],
+    vol:     ['vol','volume'],
+    dur:     ['dur','duration','ms'],
+    text:    ['text','banner','subtitle'],
+    debug:   ['debug']
+  };
+  const unresolved = v => /^%.*%$/.test(v || '');
+  function getParam(key, def=''){
+    for (const k of (ALIAS[key]||[key])) {
+      if (qs.has(k)) {
+        const v = qs.get(k);
+        return unresolved(v) ? def : (v ?? def);
+      }
+    }
+    return def;
+  }
+  function getNum(key, def){
+    const v = parseFloat(getParam(key,'')); 
+    return Number.isFinite(v) ? v : def;
+  }
+  function debugBox(text){
+    if (!getParam('debug')) return;
+    const pre = document.createElement('pre');
+    pre.style.cssText = 'position:fixed;right:8px;top:8px;z-index:99999;background:#101420;color:#9fe;border:1px solid #30394a;border-radius:8px;padding:10px 12px;font:12px ui-monospace,Consolas,monospace;max-width:42vw;white-space:pre-wrap;backdrop-filter:blur(6px)';
+    pre.textContent = text;
+    document.body.appendChild(pre);
+  }
 
-  // Banner text + avatar
-  document.getElementById('name').textContent = name;
-  document.getElementById('tag').textContent  = `Check out ${name}!`;
-  const av = document.getElementById('avatar');
-  if (profile) av.src = profile;
+  const P = {
+    name:    getParam('name','Friend'),
+    profile: getParam('profile',''),
+    clip:    getParam('clip',''),
+    vod:     getParam('vod',''),
+    vodStart:getParam('vodStart',''),
+    gif:     getParam('gif',''),
+    vol:     Math.max(0, Math.min(1, getNum('vol', 0.35))),
+    // 12s when we have video (clip/vod), else 6s for GIF
+    dur:     (()=>{ const d=parseInt(getParam('dur',''),10);
+                    if (Number.isFinite(d) && d>0) return d;
+                    return (getParam('clip')||getParam('vod')) ? 12000 : 6000; })(),
+    text:    getParam('text','')
+  };
 
-  // Compose Twitch "parent" list
+  debugBox(`[PARAMS]
+name=${P.name}
+profile=${P.profile}
+clip=${P.clip}
+vod=${P.vod}
+gif=${P.gif||'(none)'}
+vol=${P.vol}
+dur=${P.dur}
+text=${P.text||'(auto)'}`);
+
+  /* ---------- banner text + avatar ---------- */
+  document.getElementById('name').textContent = P.name;
+  document.getElementById('tag').textContent  = P.text || `Check out ${P.name}!`;
+  if (P.profile) document.getElementById('avatar').src = P.profile;
+
+  /* ---------- parent list for Twitch embeds ---------- */
   const host = (location.hostname || 'localhost');
-  const parents = [host, 'localhost', '127.0.0.1'];
-  const parentQS = parents
-      .filter((v,i,a)=>v && a.indexOf(v)===i)
-      .map(p => 'parent=' + encodeURIComponent(p))
-      .join('&');
+  const parents = [host, 'localhost', '127.0.0.1'].filter((v,i,a)=>v && a.indexOf(v)===i);
+  const parentQS = parents.map(p => 'parent=' + encodeURIComponent(p)).join('&');
 
-  // Elements
+  /* ---------- elements ---------- */
   const twDiv = document.getElementById('twitch');
   const clipI = document.getElementById('clipFrame');
   const gif   = document.getElementById('gif');
 
-  // Random GIF list (add more in /assets)
+  /* ---------- random GIF pool (FIXED COMMAS) ---------- */
   const gifPool = [
-    '/stream-player-repo/assets/hellothere.gif'
-    '/stream-player-repo/assets/hellothere2.gif'
-    '/stream-player-repo/assets/blinkguy.gif'
-    '/stream-player-repo/assets/bocchi.gif'
-    '/stream-player-repo/assets/elmo.gif'
+    '/stream-player-repo/assets/hellothere.gif',
+    '/stream-player-repo/assets/hellothere2.gif',
+    '/stream-player-repo/assets/blinkguy.gif',
+    '/stream-player-repo/assets/bocchi.gif',
+    '/stream-player-repo/assets/elmo.gif',
     '/stream-player-repo/assets/lick-anime.gif'
-    // '/stream-player-repo/assets/another1.gif',
-    // '/stream-player-repo/assets/another2.gif',
   ];
-
-  function showGif(src){
-    let gsrc = src;
-    if (!gsrc || gsrc === 'random') {
-      gsrc = gifPool[Math.floor(Math.random()*gifPool.length)];
+  function pickGif(arg){
+    if (!arg || arg === 'random') {
+      return gifPool[Math.floor(Math.random()*gifPool.length)];
     }
-    gif.src = gsrc;
-    gif.style.display = 'block';
+    return arg;
+  }
+  function showGif(arg){
+    const src = pickGif(arg);
+    gif.src = src;
+    gif.style.display   = 'block';
     clipI.style.display = 'none';
     twDiv.style.display = 'none';
   }
 
-  // Timer control: only start the “video duration” if we truly have a ready player
+  /* ---------- timer ---------- */
   let hideTimer = null;
   function startTimer(ms){
     if (hideTimer) clearTimeout(hideTimer);
-    hideTimer = setTimeout(()=>{ /* nothing to do here; SB hides the layer */ }, ms);
+    hideTimer = setTimeout(()=>{ /* Streamer.bot hides the source */ }, ms);
   }
 
-  // --- Priority: VOD > Clip > GIF ---
-  if (vodId) {
-    // Load Twitch Embed JS
+  /* ---------- media priority: VOD > Clip > GIF ---------- */
+  if (P.vod) {
     const s = document.createElement('script');
     s.src = 'https://player.twitch.tv/js/embed/v1.js';
     s.onload = () => {
+      let ready = false;
       try{
         const embed = new Twitch.Embed('twitch', {
-          width: '100%',
-          height:'100%',
-          video: vodId,
-          time: vodStart ? `0h0m${parseInt(vodStart,10)||0}s` : undefined,
-          autoplay: true,
-          muted: vol === 0,
-          allowfullscreen: true,
-          // IMPORTANT: parent must match your domain
+          width: '100%', height:'100%',
+          video: P.vod,
+          time: P.vodStart ? `0h0m${parseInt(P.vodStart,10)||0}s` : undefined,
+          autoplay: true, muted: P.vol === 0, allowfullscreen: true,
           parent: parents
         });
         twDiv.style.display = 'block';
         clipI.style.display = 'none';
-        gif.style.display    = 'none';
+        gif.style.display   = 'none';
 
-        let ready = false;
         embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
           ready = true;
-          try{
+          try {
             const player = embed.getPlayer();
-            player.setVolume(vol);
+            player.setVolume(P.vol);
             player.play();
-          }catch(e){}
-          startTimer(durMs);
+          } catch {}
+          startTimer(P.dur);
         });
 
-        // If we never become ready (blocked or removed), fall back to GIF quickly
-        setTimeout(()=>{ if (!ready) showGif(gifArg||'random'); }, 1800);
-      }catch(e){
-        // Any failure → GIF fallback
-        showGif(gifArg||'random');
-        startTimer(6000);
-      }
+        // fallback to GIF if embed never becomes ready (blocked)
+        setTimeout(()=>{ if (!ready) { showGif(P.gif||'random'); startTimer(6000); } }, 1800);
+      }catch(e){ showGif(P.gif||'random'); startTimer(6000); }
     };
-    s.onerror = () => { showGif(gifArg||'random'); startTimer(6000); };
+    s.onerror = () => { showGif(P.gif||'random'); startTimer(6000); };
     document.body.appendChild(s);
   }
-  else if (clipId) {
-    // Twitch Clips embed (must include parent list)
-    const url = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(clipId)}&autoplay=true&muted=${vol===0}${parentQS ? '&'+parentQS : ''}`;
+  else if (P.clip) {
+    const url = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(P.clip)}&autoplay=true&muted=${P.vol===0}${parentQS ? '&'+parentQS : ''}`;
     clipI.src = url;
     clipI.style.display = 'block';
     twDiv.style.display = 'none';
     gif.style.display   = 'none';
-
-    // We can't get reliable events from cross-origin iframe → optimistic timer.
-    // If the clip is “no longer available”, the user will see the Twitch ghost,
-    // but we’ll still end on time.
-    startTimer(durMs);
+    startTimer(P.dur);
   }
   else {
-    // No video → GIF
-    showGif(gifArg||'random');
+    showGif(P.gif || 'random');
     startTimer(6000);
   }
 })();
 </script>
+
 </body>
 </html>
