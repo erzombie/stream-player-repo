@@ -3,3 +3,4 @@ assets/hellothere2.gif
 assets/blinkguy.gif
 assets/bocchi.gif
 assets/elmo.gif
+assets/lick-anime.gif
