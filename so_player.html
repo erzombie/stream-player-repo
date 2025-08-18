@@ -1,151 +1,164 @@
 <!doctype html>
-<meta charset="utf-8">
+<meta charset="utf-8" />
 <title>SO Player</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
   :root{
-    --panel:#444; --text:#f3f3f3; --muted:#cfd2d6;
-    --radius:18px; --shadow:0 12px 30px rgba(0,0,0,.35);
-    --banner-h:120px; --gap:16px;
+    --radius: 16px;
+    --bannerBg: rgba(36,36,36,.92);
+    --bannerText: #fff;
+    --muted: #cfd2d6;
   }
-  html,body{
-    height:100%;margin:0;background:transparent;overflow:hidden;
-    font-family:system-ui,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;color:var(--text)
-  }
-  #wrap{
-    position:fixed;inset:0;display:grid;
-    grid-template-rows:1fr minmax(var(--banner-h),auto);
-    align-items:end;justify-items:center;
-    background:transparent;padding:24px;box-sizing:border-box;gap:var(--gap)
+  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+
+  /* Layout: media frame + bottom banner */
+  #root{
+    position:fixed; inset:0;
+    display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+    gap:20px; pointer-events:none;
   }
 
-  /* Video container */
-  #box{
-    width:100%;max-width:92vw;
-    max-height:calc(100vh - var(--banner-h) - var(--gap) - 48px);
-    aspect-ratio:16/9;background:#111;border-radius:var(--radius);
-    overflow:hidden;box-shadow:var(--shadow);display:grid;place-items:center
-  }
-  /* When we’re GIF-only, make the whole background transparent and float a big GIF */
-  .gifmode #box{ background:transparent; box-shadow:none; }
-
-  #player{width:100%;height:100%;border:0;display:none}
-
-  /* Bigger GIF (previous version vibe) */
-  #gif{
-    display:none;
-    max-width:98%;
-    max-height:98%;
-    height:auto;width:auto;
+  /* 16:9 media frame (video/clip/gif) */
+  #frame{
+    position:relative;
+    width:min(90vw, 1200px);
+    aspect-ratio:16/9;
     border-radius:var(--radius);
+    background:#0a0a0a;         /* becomes transparent in gif mode */
     box-shadow:0 10px 28px rgba(0,0,0,.35);
-    object-fit:contain;
+    display:flex; align-items:center; justify-content:center;
+    overflow:hidden;
+  }
+  body.noVideo #frame{
+    background:transparent;
+    box-shadow:none;
+  }
+
+  /* Twitch embeds / GIF */
+  iframe, #gif{
+    position:absolute; inset:0; width:100%; height:100%; border:0;
     background:transparent;
   }
+  /* Big, nice GIF */
+  #gif{
+    object-fit:contain;
+    width:100%; height:100%;
+    border-radius:var(--radius);
+  }
 
-  /* Banner pinned under the video area */
+  /* Bottom banner (always visible) */
   #banner{
-    width:clamp(520px,70vw,1100px);
-    min-height:var(--banner-h);
-    background:rgba(30,30,30,.86);
-    border-radius:calc(var(--radius) + 6px);
-    box-shadow:var(--shadow);
-    display:grid;grid-template-columns:112px 1fr;align-items:center;
-    padding:18px 26px 18px 18px;gap:18px
+    position:relative;
+    width:min(78vw, 820px);
+    border-radius:28px;
+    background:var(--bannerBg);
+    color:var(--bannerText);
+    display:flex; align-items:center; gap:16px;
+    padding:12px 20px;
+    box-shadow:0 10px 24px rgba(0,0,0,.35);
   }
-  #avatar{
-    width:92px;height:92px;border-radius:50%;
-    box-shadow:inset 0 0 0 6px rgba(255,255,255,.06),0 6px 16px rgba(0,0,0,.4);
-    background:#222 center/cover no-repeat
+  #pfp{
+    width:56px; height:56px; border-radius:50%; flex:0 0 56px;
+    background:#1c1c1c center/cover no-repeat;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,.06),
+                0 2px 8px rgba(0,0,0,.35);
   }
-  #name{font-size:clamp(28px,4.5vw,52px);line-height:1.05;font-weight:800;letter-spacing:.3px;margin:0 0 6px}
-  #sub{margin:0;font-size:clamp(16px,2vw,26px);color:var(--muted);letter-spacing:.2px}
+  #txt{display:flex; flex-direction:column; line-height:1}
+  #name{font:700 34px/1.1 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; letter-spacing:.5px}
+  #sub {font:500 18px/1.2 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--muted)}
 
-  #msg{position:fixed;top:8px;left:12px;color:#ccc;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;opacity:.65;display:none}
+  /* Small screens (or tiny sources in OBS) */
+  @media (max-width: 680px){
+    #name{font-size:26px}
+    #sub {font-size:15px}
+    #pfp{width:44px;height:44px;flex-basis:44px}
+    #banner{padding:10px 16px}
+  }
 </style>
 
-<div id="wrap">
-  <div id="box">
-    <div id="player"></div>
-    <img id="gif" alt="so gif">
+<div id="root">
+  <div id="frame">
+    <iframe id="clip" allow="autoplay" referrerpolicy="no-referrer"></iframe>
+    <div id="twWrap"></div><!-- Twitch Player div (VOD/live) -->
+    <img id="gif" alt="">
   </div>
+
   <div id="banner">
-    <div id="avatar"></div>
-    <div>
-      <h1 id="name">Streamer</h1>
-      <p id="sub">Check out Streamer!</p>
+    <div id="pfp"></div>
+    <div id="txt">
+      <div id="name">Streamer</div>
+      <div id="sub">Check out <span id="nm2">Streamer</span>!</div>
     </div>
   </div>
 </div>
-<div id="msg"></div>
 
 <script>
 (function(){
-  const qs   = new URLSearchParams(location.search);
-  const name = qs.get('name')    || 'Friend';
-  const profile = qs.get('profile') || '';
-  const clip = qs.get('clip') || '';          // slug/id
-  const vol  = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0')));
-  const gif  = qs.get('gif') || '';
-  const DEBUG= qs.has('debug');
+  const qs = new URLSearchParams(location.search);
+  const name    = qs.get('name')    || 'Friend';
+  const pfp     = qs.get('profile') || '';
+  const clipId  = qs.get('clip')    || '';
+  const vodId   = qs.get('vod')     || '';          // new
+  const vol     = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0.35')));
+  const parent  = location.hostname || 'localhost';
+  const gifQS   = qs.get('gif') || '';              // optional override
+  const gifList = qs.get('giflist') || 'assets/gifs/index.txt'; // list for randoms
+  const fallbackGif = 'assets/hellothere.gif';
 
-  const $ = id => document.getElementById(id);
-  const show = (el,on=true)=> el.style.display = on ? 'block' : 'none';
-  const msg = t => { if(DEBUG){ $('msg').textContent=t; $('msg').style.display='block'; } };
+  // Banner text & avatar
+  document.getElementById('name').textContent = name;
+  document.getElementById('nm2').textContent  = name;
+  if (pfp) document.getElementById('pfp').style.backgroundImage = `url("${pfp}")`;
 
-  $('name').textContent = name;
-  $('sub').textContent  = `Check out ${name}!`;
-  if (profile) $('avatar').style.backgroundImage = `url("${profile.replace(/"/g,'&quot;')}")`;
+  // Helpers
+  const $ = sel => document.querySelector(sel);
+  const show = id => { $('#clip').style.display='none'; $('#gif').style.display='none'; $('#twWrap').style.display='none'; $(id).style.display='block'; };
 
-  // If no clip → GIF mode (transparent background)
-  if (!clip) {
-    if (gif){ $('gif').src = gif; show($('gif'),true); }
-    document.documentElement.classList.add('gifmode');
-    msg('no clip → gif');
-    return;
+  // Prefer: VOD -> clip -> gif
+  if (vodId){
+    document.body.classList.remove('noVideo');
+    // Twitch Player API
+    const s = document.createElement('script');
+    s.src = "https://player.twitch.tv/js/embed/v1.js";
+    s.onload = () => {
+      const div = document.createElement('div');
+      div.id = "twPlayer";
+      $('#twWrap').appendChild(div);
+      show('#twWrap');
+      const player = new Twitch.Player("twPlayer", {
+        video: vodId,
+        autoplay: true, muted: vol === 0, volume: vol,
+        parent: [parent],
+        controls: true
+      });
+      try { player.setVolume(vol); } catch {}
+    };
+    document.head.appendChild(s);
+  } else if (clipId){
+    document.body.classList.remove('noVideo');
+    const url = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(clipId)}&parent=${encodeURIComponent(parent)}&autoplay=true&muted=${vol===0?'true':'false'}`;
+    $('#clip').src = url;
+    show('#clip');
+  } else {
+    // GIF fallback (random if index exists)
+    document.body.classList.add('noVideo');
+    (async () => {
+      let gif = gifQS;
+      if (!gif){
+        try{
+          const r = await fetch(gifList, {cache:'no-store'});
+          if (r.ok){
+            const txt = await r.text();
+            const lines = txt.split(/\r?\n/).map(s=>s.trim()).filter(s=>s && !s.startsWith('#'));
+            if (lines.length) gif = lines[Math.floor(Math.random()*lines.length)];
+          }
+        }catch{}
+      }
+      if (!gif) gif = fallbackGif;
+      $('#gif').src = gif;
+      show('#gif');
+    })();
   }
-
-  const parents = ['localhost','127.0.0.1','obsproject.com','erzombie.github.io'];
-  const s = document.createElement('script');
-  s.src = "https://embed.twitch.tv/embed/v1.js";
-  s.onload = () => {
-    try {
-      const embed = new Twitch.Embed("player", {
-        width: "100%", height: "100%", clip, autoplay: true,
-        muted: vol <= 0.0001, parent: parents
-      });
-
-      // Safety timer: if playback doesn’t start quickly, fall back to GIF & transparent background
-      let timer = setTimeout(() => {
-        if(gif){ $('gif').src = gif; show($('gif'),true); }
-        show($('player'),false);
-        document.documentElement.classList.add('gifmode');
-        msg('timeout → gif');
-      }, 3000);
-
-      embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
-        try {
-          const player = embed.getPlayer();
-          player.setMuted(false);
-          player.setVolume(Math.max(0, Math.min(1, vol || 0.35)));
-          player.play();
-          clearTimeout(timer);
-          show($('player'), true);
-          show($('gif'), false);
-          msg('player ready');
-        } catch(e){ msg('ready but play/vol failed'); }
-      });
-    } catch(e) {
-      if (gif){ $('gif').src = gif; show($('gif'),true); }
-      document.documentElement.classList.add('gifmode');
-      msg('embed error → gif');
-    }
-  };
-  s.onerror = () => {
-    if (gif){ $('gif').src = gif; show($('gif'),true); }
-    document.documentElement.classList.add('gifmode');
-    msg('sdk load fail → gif');
-  };
-  document.body.appendChild(s);
 })();
 </script>
