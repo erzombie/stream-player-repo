@@ -1,164 +1,147 @@
 <!doctype html>
 <meta charset="utf-8" />
 <title>SO Player</title>
-<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   :root{
-    --radius: 16px;
-    --bannerBg: rgba(36,36,36,.92);
-    --bannerText: #fff;
-    --muted: #cfd2d6;
+    --pad: 18px;
+    --radius: 18px;
+    --glass: rgba(0,0,0,.72);
+    --text: #f2f2f2;
+    --sub : #d0d0d0;
+    --shadow: 0 18px 40px rgba(0,0,0,.35);
   }
   html,body{margin:0;height:100%;background:transparent;overflow:hidden}
+  #root{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
 
-  /* Layout: media frame + bottom banner */
-  #root{
-    position:fixed; inset:0;
-    display:flex; flex-direction:column;
-    align-items:center; justify-content:center;
-    gap:20px; pointer-events:none;
-  }
-
-  /* 16:9 media frame (video/clip/gif) */
-  #frame{
-    position:relative;
-    width:min(90vw, 1200px);
-    aspect-ratio:16/9;
-    border-radius:var(--radius);
-    background:#0a0a0a;         /* becomes transparent in gif mode */
-    box-shadow:0 10px 28px rgba(0,0,0,.35);
+  /* Stage = 16:9 area for Twitch or GIF (kept big & centered) */
+  #stage{
+    position:absolute; inset:4% 3% 22% 3%;
     display:flex; align-items:center; justify-content:center;
-    overflow:hidden;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    background:#111; /* hidden when gif-only */
   }
-  body.noVideo #frame{
-    background:transparent;
-    box-shadow:none;
+  /* keep a solid aspect even if iframe is still loading */
+  #stage::before{ content:""; display:block; width:100%; aspect-ratio:16/9; }
+  #player, #gif{
+    position:absolute; inset:0; width:100%; height:100%;
+    border:0; border-radius: var(--radius); display:none;
   }
-
-  /* Twitch embeds / GIF */
-  iframe, #gif{
-    position:absolute; inset:0; width:100%; height:100%; border:0;
-    background:transparent;
-  }
-  /* Big, nice GIF */
+  /* Big GIF */
   #gif{
     object-fit:contain;
-    width:100%; height:100%;
-    border-radius:var(--radius);
+    background:transparent;
+    display:none;
   }
-
-  /* Bottom banner (always visible) */
+  /* Bottom-center banner */
   #banner{
-    position:relative;
-    width:min(78vw, 820px);
-    border-radius:28px;
-    background:var(--bannerBg);
-    color:var(--bannerText);
-    display:flex; align-items:center; gap:16px;
-    padding:12px 20px;
-    box-shadow:0 10px 24px rgba(0,0,0,.35);
+    position:absolute; left:50%; bottom:3%;
+    transform:translateX(-50%);
+    display:flex; align-items:center; gap:14px;
+    padding:14px 18px;
+    background:var(--glass);
+    border-radius: 16px;
+    color:var(--text);
+    font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
+    box-shadow: var(--shadow);
+    pointer-events:none;
   }
   #pfp{
-    width:56px; height:56px; border-radius:50%; flex:0 0 56px;
-    background:#1c1c1c center/cover no-repeat;
-    box-shadow: inset 0 0 0 3px rgba(255,255,255,.06),
-                0 2px 8px rgba(0,0,0,.35);
+    width:44px; height:44px; border-radius:50%;
+    background:#222 center/cover no-repeat; flex:0 0 44px;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,.08);
   }
-  #txt{display:flex; flex-direction:column; line-height:1}
-  #name{font:700 34px/1.1 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; letter-spacing:.5px}
-  #sub {font:500 18px/1.2 ui-sans-serif,system-ui,Segoe UI,Roboto,Arial; color:var(--muted)}
+  #who{ line-height:1.1 }
+  #name{ font-size:28px; font-weight:800; letter-spacing:.3px }
+  #line{ font-size:14px; color:var(--sub) }
 
-  /* Small screens (or tiny sources in OBS) */
-  @media (max-width: 680px){
-    #name{font-size:26px}
-    #sub {font-size:15px}
-    #pfp{width:44px;height:44px;flex-basis:44px}
-    #banner{padding:10px 16px}
-  }
+  /* When we’re gif-only, remove the stage background and let GIF breathe */
+  .gifOnly #stage{ background:transparent; }
+  .gifOnly #gif{ display:block; width: min(92vw, 92vh); height:auto; inset:auto; }
 </style>
 
 <div id="root">
-  <div id="frame">
-    <iframe id="clip" allow="autoplay" referrerpolicy="no-referrer"></iframe>
-    <div id="twWrap"></div><!-- Twitch Player div (VOD/live) -->
-    <img id="gif" alt="">
+  <div id="stage">
+    <iframe id="player" allow="autoplay; fullscreen; picture-in-picture"></iframe>
+    <img id="gif" alt="so gif"/>
   </div>
 
   <div id="banner">
     <div id="pfp"></div>
-    <div id="txt">
-      <div id="name">Streamer</div>
-      <div id="sub">Check out <span id="nm2">Streamer</span>!</div>
+    <div id="who">
+      <div id="name"></div>
+      <div id="line"></div>
     </div>
   </div>
 </div>
 
 <script>
 (function(){
-  const qs = new URLSearchParams(location.search);
-  const name    = qs.get('name')    || 'Friend';
-  const pfp     = qs.get('profile') || '';
-  const clipId  = qs.get('clip')    || '';
-  const vodId   = qs.get('vod')     || '';          // new
-  const vol     = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0.35')));
-  const parent  = location.hostname || 'localhost';
-  const gifQS   = qs.get('gif') || '';              // optional override
-  const gifList = qs.get('giflist') || 'assets/gifs/index.txt'; // list for randoms
-  const fallbackGif = 'assets/hellothere.gif';
+  const qs      = new URLSearchParams(location.search);
+  const clip    = (qs.get('clip')    || '').trim();
+  const vod     = (qs.get('vod')     || '').trim();
+  const name    = (qs.get('name')    || 'Friend').trim();
+  const profile = (qs.get('profile') || '').trim();
+  const vol     = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0.35') || 0.35));
+  const durMs   = parseInt(qs.get('dur') || '0', 10);
+  const gifList = (qs.get('giflist') || '').trim(); // optional index.txt (one path per line)
+  const HOST    = location.hostname || 'localhost';
 
-  // Banner text & avatar
+  // Banner
   document.getElementById('name').textContent = name;
-  document.getElementById('nm2').textContent  = name;
-  if (pfp) document.getElementById('pfp').style.backgroundImage = `url("${pfp}")`;
+  document.getElementById('line').textContent = 'Check out ' + name + '!';
+  if (profile) document.getElementById('pfp').style.backgroundImage = `url("${profile}")`;
 
-  // Helpers
-  const $ = sel => document.querySelector(sel);
-  const show = id => { $('#clip').style.display='none'; $('#gif').style.display='none'; $('#twWrap').style.display='none'; $(id).style.display='block'; };
+  const stage  = document.getElementById('stage');
+  const player = document.getElementById('player');
+  const gifEl  = document.getElementById('gif');
 
-  // Prefer: VOD -> clip -> gif
-  if (vodId){
-    document.body.classList.remove('noVideo');
-    // Twitch Player API
-    const s = document.createElement('script');
-    s.src = "https://player.twitch.tv/js/embed/v1.js";
-    s.onload = () => {
-      const div = document.createElement('div');
-      div.id = "twPlayer";
-      $('#twWrap').appendChild(div);
-      show('#twWrap');
-      const player = new Twitch.Player("twPlayer", {
-        video: vodId,
-        autoplay: true, muted: vol === 0, volume: vol,
-        parent: [parent],
-        controls: true
-      });
-      try { player.setVolume(vol); } catch {}
-    };
-    document.head.appendChild(s);
-  } else if (clipId){
-    document.body.classList.remove('noVideo');
-    const url = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(clipId)}&parent=${encodeURIComponent(parent)}&autoplay=true&muted=${vol===0?'true':'false'}`;
-    $('#clip').src = url;
-    show('#clip');
-  } else {
-    // GIF fallback (random if index exists)
-    document.body.classList.add('noVideo');
-    (async () => {
-      let gif = gifQS;
-      if (!gif){
-        try{
-          const r = await fetch(gifList, {cache:'no-store'});
-          if (r.ok){
-            const txt = await r.text();
-            const lines = txt.split(/\r?\n/).map(s=>s.trim()).filter(s=>s && !s.startsWith('#'));
-            if (lines.length) gif = lines[Math.floor(Math.random()*lines.length)];
+  const showPlayer = (src) => {
+    player.src = src;
+    player.style.display = 'block';
+    gifEl.style.display = 'none';
+    stage.classList.remove('gifOnly');
+  };
+
+  const showGif = async () => {
+    let url = 'assets/hellothere.gif';
+    if (gifList){
+      try{
+        const r = await fetch(gifList, {cache:'no-store'});
+        if (r.ok){
+          const lines = (await r.text()).split(/\r?\n/)
+              .map(s=>s.trim())
+              .filter(s=>s && !s.startsWith('#'));
+          if (lines.length){
+            url = lines[Math.floor(Math.random()*lines.length)];
           }
-        }catch{}
-      }
-      if (!gif) gif = fallbackGif;
-      $('#gif').src = gif;
-      show('#gif');
-    })();
+        }
+      }catch{}
+    }
+    gifEl.src = url;
+    gifEl.style.display = 'block';
+    player.style.display = 'none';
+    stage.classList.add('gifOnly');
+  };
+
+  const muted = (vol <= 0);
+
+  if (clip){
+    // Twitch Clip embed
+    const src = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(clip)}&parent=${encodeURIComponent(HOST)}&autoplay=true&muted=${muted?'true':'false'}`;
+    showPlayer(src);
+  } else if (vod){
+    // Twitch VOD embed
+    const src = `https://player.twitch.tv/?video=${encodeURIComponent(vod)}&parent=${encodeURIComponent(HOST)}&autoplay=true&muted=${muted?'true':'false'}`;
+    showPlayer(src);
+  } else {
+    showGif();
+  }
+
+  // Optional page self-timeout only if dur is provided (SB still owns the hide)
+  if (durMs > 0){
+    setTimeout(()=>{ /* no-op; SB hides source */ }, durMs);
   }
 })();
 </script>
