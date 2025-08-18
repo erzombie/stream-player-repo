@@ -6,87 +6,63 @@
 <title>SO Player — GIF only</title>
 <style>
   :root{
-    /* feel free to tweak */
-    --radius: clamp(12px, 3vmin, 28px);     /* rounded corners for GIF */
+    --radius: clamp(12px, 3vmin, 28px);
     --shadow: 0 14px 38px rgba(0,0,0,.35);
     --chipBg: rgba(32,32,32,.92);
     --chipText: #fff;
     --chipMuted: #d8d8d8;
   }
-
   html,body{height:100%;width:100%;margin:0;background:transparent;overflow:hidden;
-            font-family: system-ui, Segoe UI, Roboto, Inter, Arial, sans-serif;}
+            font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;}
+  #stage{position:fixed;inset:0;background:transparent}
 
-  #stage{position:fixed; inset:0; background:transparent}
-
-  /* --- GIF box (centered, rounded, no overscan) --- */
+  /* GIF box */
   #gifBox{
-    position:absolute; left:50%; top:6vh; transform:translateX(-50%);
-    width:min(92vw, 160vh);               /* keep ~16:9 limits without forcing it */
-    height:min(78vh, 51.75vw);
-    border-radius:var(--radius);
-    overflow:hidden;
-    box-shadow: var(--shadow);
-    display:flex; align-items:center; justify-content:center;
-    background: transparent;              /* no dark plate; the GIF edges are rounded */
+    position:absolute;left:50%;top:6vh;transform:translateX(-50%);
+    width:min(92vw,160vh);height:min(78vh,51.75vw);
+    border-radius:var(--radius);overflow:hidden;
+    box-shadow:var(--shadow);
+    display:flex;align-items:center;justify-content:center;
+    background:transparent;
   }
   #gif{
-    width:100%; height:100%;
-    object-fit: contain;                  /* don’t upscale/pixelate */
-    border-radius:var(--radius);          /* dynamic curved edges */
-    display:block;
-    background: transparent;
+    width:100%;height:100%;
+    object-fit:contain;
+    border-radius:var(--radius);
+    display:block;background:transparent;
   }
 
-  /* --- Bottom “O=” banner: big avatar + slightly smaller chip on the side --- */
+  /* O= banner */
   #chipWrap{
-    position:absolute; left:50%; bottom:4.5vh; transform:translateX(-50%);
-    display:flex; align-items:center; gap:clamp(12px, 1.6vw, 24px);
+    position:absolute;left:50%;bottom:4.5vh;transform:translateX(-50%);
+    display:flex;align-items:center;gap:clamp(12px,1.6vw,24px);
     pointer-events:none;
   }
-  /* Big round avatar (“O”) */
+  /* Big avatar (≈ +80%) */
   #avatarWrap{
-    width: clamp(96px, 12vw, 160px);
-    height: clamp(96px, 12vw, 160px);
-    border-radius: 999px;
-    overflow:hidden;
-    border: clamp(2px, .5vw, 4px) solid rgba(0,0,0,.35);
-    box-shadow: inset 0 0 0 2px rgba(255,255,255,.08), var(--shadow);
-    flex: 0 0 auto;
+    width:clamp(172px,21.6vw,288px);
+    height:clamp(172px,21.6vw,288px);
+    border-radius:999px;overflow:hidden;flex:0 0 auto;
+    border:clamp(2px,.5vw,4px) solid rgba(0,0,0,.35);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.08), var(--shadow);
     background:#222;
   }
-  #avatar{
-    width:100%; height:100%;
-    object-fit: cover;
-    display:block;
-  }
+  #avatar{width:100%;height:100%;object-fit:cover;display:block}
 
-  /* “=” chip (a bit smaller than avatar’s height) */
+  /* Chip a bit smaller, two-line text inside */
   #chip{
-    height: clamp(64px, 8.2vw, 110px);          /* smaller than the avatar */
-    max-width: min(70vw, 1200px);
-    padding: 0 clamp(18px, 2.2vw, 34px);
-    display:flex; align-items:center;
-    border-radius: 14px;
-    background: var(--chipBg);
-    color: var(--chipText);
-    box-shadow: var(--shadow);
+    height:clamp(64px,8.2vw,110px);
+    max-width:min(70vw,1200px);
+    padding:clamp(12px,1.2vw,20px) clamp(18px,2.2vw,34px);
+    display:flex;align-items:center;border-radius:14px;
+    background:var(--chipBg);color:var(--chipText);box-shadow:var(--shadow);
   }
-  #name{
-    font-weight: 900;
-    font-size: clamp(26px, 3.8vw, 58px);
-    line-height: 1.02; letter-spacing: .2px;
-  }
-  #tag{
-    font-size: clamp(14px, 2vw, 26px);
-    color: var(--chipMuted);
-    margin-left: clamp(10px, 1.5vw, 18px);
-  }
+  #textCol{display:flex;flex-direction:column;justify-content:center}
+  #name{font-weight:900;font-size:clamp(30px,4.4vw,66px);line-height:1.02;letter-spacing:.2px}
+  #tag{font-size:clamp(16px,2.2vw,28px);color:var(--chipMuted);margin-top:clamp(4px,.5vw,8px)}
 
-  /* Small stack when canvas is narrow */
-  @media (max-width: 560px){
-    #chip{padding: 0 14px}
-    #tag{display:none}
+  @media (max-width:560px){
+    #chip{padding:8px 14px}
   }
 </style>
 </head>
@@ -98,38 +74,40 @@
     <div id="chipWrap" role="complementary" aria-live="polite">
       <div id="avatarWrap"><img id="avatar" alt="avatar"></div>
       <div id="chip">
-        <div id="name">Friend</div>
-        <div id="tag">Check out Friend!</div>
+        <div id="textCol">
+          <div id="name">Friend</div>
+          <div id="tag">Check Out @Friend</div>
+        </div>
       </div>
     </div>
   </div>
 
 <script>
 (function(){
-  /* ---- params with simple aliases ---- */
   const qs = new URLSearchParams(location.search);
-  const alias = (keys, d='')=>{
-    for (const k of (Array.isArray(keys)?keys:[keys])) if (qs.has(k)) return qs.get(k)||d;
+  const get = (keys, d='')=>{
+    if (!Array.isArray(keys)) keys=[keys];
+    for (const k of keys) if (qs.has(k)) return qs.get(k) || d;
     return d;
   };
 
   const P = {
-    name:    alias(['name','displayName','user','username','target'], 'Friend'),
-    profile: alias(['profile','avatar','pfp','image','img'], ''),
-    text:    alias(['text','banner','subtitle'], ''),
-    // GIF selection: explicit url OR "random"
-    gif:     alias(['gif','fallback','fallbackGif'], 'random'),
-    // duration (ms) before Streamer.bot hides the source (default 6000)
-    dur:     (()=>{ const n = parseInt(alias(['dur','duration','ms'], ''), 10);
-                    return Number.isFinite(n)&&n>0 ? n : 6000; })()
+    name:    get(['name','displayName','user','username','target'],'Friend'),
+    profile: get(['profile','avatar','pfp','image','img'],''),
+    gif:     get(['gif','fallback','fallbackGif'],'random'),
+    dur:     (()=>{ const n=parseInt(get(['dur','duration','ms'],''),10);
+                    return Number.isFinite(n)&&n>0 ? n : 6000; })(),
+    user:    get(['user','username','target','login'],'') // optional explicit handle
   };
 
   // banner content
   document.getElementById('name').textContent = P.name;
-  document.getElementById('tag').textContent  = P.text || `Check out ${P.name}!`;
+  const userAt = (P.user ? P.user.replace(/^@/,'')
+                          : (P.name||'Friend').replace(/\s+/g,'')).trim();
+  document.getElementById('tag').textContent = `Check Out @${userAt}`;
   if (P.profile) document.getElementById('avatar').src = P.profile;
 
-  // random GIF pool (edit to taste)
+  // random GIF pool
   const gifPool = [
     '/stream-player-repo/assets/hellothere.gif',
     '/stream-player-repo/assets/hellothere2.gif',
@@ -138,15 +116,14 @@
     '/stream-player-repo/assets/elmo.gif',
     '/stream-player-repo/assets/lick-anime.gif'
   ];
-  const pickGif = (arg)=> arg && arg !== 'random'
+  const pickGif = (arg)=> arg && arg.toLowerCase()!=='random'
       ? arg
       : gifPool[Math.floor(Math.random()*gifPool.length)];
 
-  // show GIF immediately
   document.getElementById('gif').src = pickGif(P.gif);
 
-  // simple timer: SB hides the browser source afterwards
-  let t = setTimeout(()=>{/* no-op */}, P.dur);
+  // simple timer; Streamer.bot hides the source
+  setTimeout(()=>{}, P.dur);
 })();
 </script>
 </body>
