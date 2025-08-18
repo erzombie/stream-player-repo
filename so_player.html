@@ -1,116 +1,118 @@
 <!doctype html>
-<meta charset="utf-8" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SO Player</title>
+
 <style>
-  :root { --pad: 16px; }
-  html,body{height:100%;margin:0;background:transparent;overflow:hidden}
-  #wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
-  #player{position:absolute;inset:0;}
-  #fallback{position:absolute;inset:0;display:none;align-items:flex-end;justify-content:flex-start}
-  #fallback.show{display:flex}
+  html,body{margin:0;background:transparent;overflow:hidden}
+
+  :root{
+    /* tweak these to taste */
+    --avatar-size: clamp(88px, 10vw, 140px);
+    --name-size:   clamp(38px, 5.2vw, 72px);
+    --msg-size:    clamp(18px, 2.6vw, 30px);
+    --bar-bg: rgba(40,40,40,.88);
+  }
+
+  /* Layout: smaller video at left, big ID bar along bottom */
+  #wrap{
+    position:fixed; inset:0;
+    display:grid; grid-template-columns: 40% 60%;
+    align-items:center; justify-items:center; gap:2vw;
+    pointer-events:none;
+  }
+
+  /* 16:9 video box (hidden when no clip) */
+  #clipBox{
+    width:100%;
+    max-width:min(48vw, 90vh);
+    aspect-ratio:16/9;
+    border-radius:16px; overflow:hidden;
+    background:#222; box-shadow:0 10px 36px rgba(0,0,0,.45);
+  }
+  #clipBox.hide{ display:none; }
+
+  /* Identity bar */
   #bar{
-    width:100%;margin:0 var(--pad) var(--pad) var(--pad);
-    padding:12px 16px;border-radius:14px;background:rgba(0,0,0,.65);
-    color:#fff;font:600 32px/1.2 system-ui,Segoe UI,Roboto,Arial,sans-serif;
-    display:flex;align-items:center;gap:14px;
+    position:fixed; left:0; right:0; bottom:0;
+    display:flex; align-items:center; gap:14px;
+    padding:12px 18px;
+    background:var(--bar-bg);
+    color:#fff; font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
   }
   #avatar{
-    width:56px;height:56px;border-radius:50%;flex:0 0 56px;object-fit:cover;
-    background:#222
+    width:var(--avatar-size); height:var(--avatar-size);
+    border-radius:50%; object-fit:cover;
+    box-shadow:0 6px 18px rgba(0,0,0,.35);
   }
+  #who{ font-weight:800; font-size:var(--name-size); line-height:1.05 }
+  #msg{ font-size:var(--msg-size); opacity:.95 }
+  #text{ display:flex; flex-direction:column }
 </style>
 
 <div id="wrap">
-  <div id="player"></div>
+  <div id="clipBox"><div id="player"></div></div>
+</div>
 
-  <!-- fallback banner if we can't play a clip -->
-  <div id="fallback">
-    <div id="bar">
-      <img id="avatar" alt="">
-      <div id="who"></div>
-    </div>
+<div id="bar">
+  <img id="avatar" alt="">
+  <div id="text">
+    <div id="who"></div>
+    <div id="msg"></div>
   </div>
 </div>
 
-<!-- Twitch embed API (lets us set volume and unmute after load) -->
-<script src="https://embed.twitch.tv/embed/v1.js"></script>
+<!-- Official Twitch Embed -->
+<script src="https://player.twitch.tv/js/embed/v1.js"></script>
 <script>
-(function () {
+(function(){
   const qs = new URLSearchParams(location.search);
 
   const name   = qs.get('name')   || '';
   const avatar = qs.get('avatar') || '';
-  const vol    = Math.max(0, Math.min(1, parseFloat(qs.get('vol') || '0.3') || 0));
-  const text   = qs.get('text')   || (name ? `Check out ${name}!` : 'Check them out!');
-  const parent = location.hostname;
+  const vol    = Math.max(0, Math.min(1, parseFloat(qs.get('vol') || '0.35')));
 
-  // Accept clipId directly, or a 'clip' full URL, or even a raw slug.
-  const clipId = qs.get('clipId') || parseClip(qs.get('clip') || '');
-
-  // UI wiring
-  const fallback = document.getElementById('fallback');
-  const who      = document.getElementById('who');
-  const img      = document.getElementById('avatar');
-  who.textContent = text;
-  if (avatar) img.src = avatar;
-
-  function showFallback(){ fallback.classList.add('show'); }
-
-  // Try to embed the clip
-  if (clipId) {
-    let ready = false;
-    try {
-      const player = new Twitch.Player("player", {
-        width: "100%", height: "100%",
-        clip: clipId,
-        autoplay: true,
-        muted: (vol <= 0),          // keep muted for autoplay, we unmute on READY if vol>0
-        controls: false,
-        parent: [parent]
-      });
-
-      player.addEventListener(Twitch.Player.READY, function () {
-        ready = true;
-        try {
-          player.setVolume(vol);
-          if (vol > 0) player.setMuted(false);
-        } catch(_) {}
-      });
-
-      // If the embed never becomes ready, fall back gracefully
-      setTimeout(function(){ if(!ready) showFallback(); }, 2500);
-    } catch (e) {
-      showFallback();
-    }
-  } else {
-    showFallback();
+  // clip can come as ?clipId=SLUG or ?clipUrl=https://www.twitch.tv/.../SLUG
+  let slug = qs.get('clipId') || '';
+  if (!slug) {
+    const cu = qs.get('clipUrl') || '';
+    const m = cu.match(/clip\/([^/?#]+)/i);
+    if (m) slug = m[1];
   }
 
-  // --- helpers ---
-  function parseClip(input){
-    if (!input) return '';
-    // already a slug?
-    if (/^[A-Za-z0-9_-]+$/.test(input)) return input;
+  document.getElementById('avatar').src = avatar || '';
+  document.getElementById('who').textContent = name || '';
+  document.getElementById('msg').textContent = 'Check out ' + (name || 'this creator') + '!';
 
-    try {
-      const u = new URL(input);
+  const clipBox = document.getElementById('clipBox');
 
-      // ?clip=<slug>
-      const qp = u.searchParams.get('clip');
-      if (qp) return qp;
+  if (!slug) {           // No clip? show avatar+text only
+    clipBox.classList.add('hide');
+    return;
+  }
 
-      // /clip/<slug>
-      const m1 = u.pathname.match(/\/clip\/([^/?#]+)/i);
-      if (m1) return m1[1];
+  try {
+    const parentHost = location.hostname; // github pages / obs browser source host
+    const embed = new Twitch.Embed("player", {
+      width: "100%",
+      height: "100%",
+      clip: slug,
+      autoplay: true,
+      muted: vol === 0,
+      parent: [parentHost]
+    });
 
-      // clips.twitch.tv/<slug>
-      if (u.hostname.includes('clips.twitch.tv')) {
-        const slug = u.pathname.replace(/^\/+/, '').split(/[/?#]/)[0];
-        if (slug) return slug;
-      }
-    } catch (_) {}
-
-    return '';
+    embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+      try {
+        const player = embed.getPlayer();
+        player.setVolume(vol);
+        if (vol > 0) player.setMuted(false);
+        player.play();
+      } catch(e) {}
+    });
+  } catch(e) {
+    console.log('embed error', e);
+    clipBox.classList.add('hide');
   }
 })();
 </script>
