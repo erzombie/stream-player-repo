@@ -3,116 +3,42 @@
 <title>SO Player</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
-  :root {
-    --bg: #000;
-    --panel: #444;
-    --text: #f3f3f3;
-    --muted: #cfd2d6;
-    --radius: 18px;
-    --shadow: 0 12px 30px rgba(0,0,0,.35);
-    --banner-h: 120px;      /* banner height */
-    --gap: 16px;            /* gap between video and banner */
+  :root{
+    --bg:#000; --panel:#444; --text:#f3f3f3; --muted:#cfd2d6;
+    --radius:18px; --shadow:0 12px 30px rgba(0,0,0,.35);
+    --banner-h:120px; --gap:16px;
   }
-  html,body {
-    height: 100%;
-    margin: 0;
-    background: transparent; /* so OBS can key it over the scene */
-    overflow: hidden;
-    font-family: system-ui, Segoe UI, Roboto, Inter, Helvetica, Arial, sans-serif;
-    color: var(--text);
-  }
+  html,body{height:100%;margin:0;background:transparent;overflow:hidden;
+    font-family:system-ui,Segoe UI,Roboto,Inter,Helvetica,Arial,sans-serif;color:var(--text)}
+  #wrap{position:fixed;inset:0;display:grid;grid-template-rows:1fr minmax(var(--banner-h),auto);
+    align-items:end;justify-items:center;background:transparent;padding:24px;box-sizing:border-box;gap:var(--gap)}
 
-  /* 2-row layout: video area (flex) + banner area (fixed) */
-  #wrap {
-    position: fixed;
-    inset: 0;
-    display: grid;
-    grid-template-rows: 1fr minmax(var(--banner-h), auto);
-    align-items: end;
-    justify-items: center;
-    background: transparent;
-    padding: 24px;
-    box-sizing: border-box;
-    gap: var(--gap);
-  }
+  /* Video box */
+  #box{width:100%;max-width:92vw;max-height:calc(100vh - var(--banner-h) - var(--gap) - 48px);
+    aspect-ratio:16/9;background:#111;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);
+    display:grid;place-items:center}
+  #player{width:100%;height:100%;border:0;display:none}
+  /* Smaller, centered GIF (roughly like your older sizing) */
+  #gif{display:none;max-width:78%;max-height:78%;height:auto;width:auto;border-radius:var(--radius);
+    box-shadow:0 10px 28px rgba(0,0,0,.35);object-fit:contain;background:#000}
 
-  /* Video box keeps 16:9 and grows to available space (minus banner). */
-  #box {
-    width: 100%;
-    max-width: 92vw;
-    max-height: calc(100vh - var(--banner-h) - var(--gap) - 48px);
-    aspect-ratio: 16 / 9;
-    background: #111;
-    border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: var(--shadow);
-    display: grid;
-    place-items: center;
-  }
-  #player, #gif {
-    width: 100%;
-    height: 100%;
-    border: 0;
-    display: none; /* switched on by JS */
-    object-fit: cover;
-    background: #000;
-  }
-  #player { display: none; }
-  #gif { display: none; }
+  /* Banner */
+  #banner{width:clamp(520px,70vw,1100px);min-height:var(--banner-h);background:rgba(30,30,30,.86);
+    border-radius:calc(var(--radius) + 6px);box-shadow:var(--shadow);display:grid;
+    grid-template-columns:112px 1fr;align-items:center;padding:18px 26px 18px 18px;gap:18px}
+  #avatar{width:92px;height:92px;border-radius:50%;box-shadow:inset 0 0 0 6px rgba(255,255,255,.06),0 6px 16px rgba(0,0,0,.4);
+    background:#222 center/cover no-repeat}
+  #name{font-size:clamp(28px,4.5vw,52px);line-height:1.05;font-weight:800;letter-spacing:.3px;margin:0 0 6px}
+  #sub{margin:0;font-size:clamp(16px,2vw,26px);color:var(--muted);letter-spacing:.2px}
 
-  /* Bottom-center banner (separate from video, not overlapping) */
-  #banner {
-    width: clamp(520px, 70vw, 1100px);
-    min-height: var(--banner-h);
-    background: rgba(30,30,30,.86);
-    border-radius: calc(var(--radius) + 6px);
-    box-shadow: var(--shadow);
-    display: grid;
-    grid-template-columns: 112px 1fr;
-    align-items: center;
-    padding: 18px 26px 18px 18px;
-    gap: 18px;
-  }
-  #avatar {
-    width: 92px;
-    height: 92px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 6px rgba(255,255,255,.06), 0 6px 16px rgba(0,0,0,.4);
-    background: #222 center/cover no-repeat;
-  }
-  #name {
-    font-size: clamp(28px, 4.5vw, 52px);
-    line-height: 1.05;
-    font-weight: 800;
-    letter-spacing: .3px;
-    margin: 0 0 6px 0;
-  }
-  #sub {
-    margin: 0;
-    font-size: clamp(16px, 2vw, 26px);
-    color: var(--muted);
-    letter-spacing: .2px;
-  }
-
-  /* Tiny fail label (only shown in debug) */
-  #msg {
-    position: fixed;
-    top: 8px; left: 12px;
-    color: #ccc;
-    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-    opacity: .65;
-    display: none;
-  }
+  #msg{position:fixed;top:8px;left:12px;color:#ccc;font:13px/1.5 ui-monospace,Menlo,Consolas,monospace;opacity:.65;display:none}
 </style>
 
 <div id="wrap">
   <div id="box">
-    <!-- We use Twitch’s JS SDK for volume/unmute control. -->
     <div id="player"></div>
-    <!-- Centered fallback GIF when there’s no (playable) clip -->
     <img id="gif" alt="so gif">
   </div>
-
   <div id="banner">
     <div id="avatar"></div>
     <div>
@@ -121,91 +47,56 @@
     </div>
   </div>
 </div>
-
 <div id="msg"></div>
 
 <script>
 (function(){
-  const qs  = new URLSearchParams(location.search);
+  const qs   = new URLSearchParams(location.search);
   const name = qs.get('name')    || 'Friend';
-  const profile = qs.get('profile') || '';    // image URL
-  const clip = qs.get('clip') || '';          // Twitch clip slug (not full URL)
-  const vol  = Math.max(0, Math.min(1, parseFloat(qs.get('vol') || '0')));  // 0..1
-  const gif  = qs.get('gif') || '';           // fallback GIF absolute URL
-  const DEBUG = qs.has('debug');
-
+  const profile = qs.get('profile') || '';
+  const clip = qs.get('clip') || '';          // slug/id
+  const vol  = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0')));
+  const gif  = qs.get('gif') || '';
+  const DEBUG= qs.has('debug');
   const $ = id => document.getElementById(id);
-  const show = (el, on=true)=> el.style.display = on ? (el.tagName==='IMG'?'block':'block') : 'none';
-  const msg = t => { if (DEBUG) { $('msg').textContent = t; $('msg').style.display='block'; } };
+  const show = (el,on=true)=> el.style.display = on ? 'block' : 'none';
+  const msg = t => { if(DEBUG){ $('msg').textContent=t; $('msg').style.display='block'; } };
 
-  // Fill banner
   $('name').textContent = name;
-  $('sub').textContent = `Check out ${name}!`;
+  $('sub').textContent  = `Check out ${name}!`;
   if (profile) $('avatar').style.backgroundImage = `url("${profile.replace(/"/g,'&quot;')}")`;
 
-  // Decide whether to embed a clip or show the gif
-  if (!clip) {
-    // No clip: show GIF center
-    if (gif) {
-      $('gif').src = gif;
-      show($('gif'), true);
-    }
-    msg('no clip -> showing gif');
-    return;
-  }
+  if (!clip) { if (gif){ $('gif').src = gif; show($('gif'),true);} msg('no clip → gif'); return; }
 
-  // ---- Twitch JS embed so we can set volume ----
-  // parent list includes obsproject.com for OBS Browser Source compliance
   const parents = ['localhost','127.0.0.1','obsproject.com','erzombie.github.io'];
-  const script = document.createElement('script');
-  script.src = "https://embed.twitch.tv/embed/v1.js";
-  script.onload = () => {
+  const s = document.createElement('script');
+  s.src = "https://embed.twitch.tv/embed/v1.js";
+  s.onload = () => {
     try {
       const embed = new Twitch.Embed("player", {
-        width: "100%",
-        height: "100%",
-        clip: clip,
-        autoplay: true,
-        muted: vol <= 0.0001,         // autoplay policies prefer muted start
-        time: "0h0m0s",
-        parent: parents
+        width: "100%", height: "100%", clip, autoplay: true,
+        muted: vol <= 0.0001, parent: parents
       });
-
       embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
         try {
           const player = embed.getPlayer();
           player.setMuted(false);
           player.setVolume(Math.max(0, Math.min(1, vol || 0.35)));
           player.play();
-          msg('player ready, playing');
-        } catch(e){ msg('player ready but volume/play failed'); }
+          show($('player'), true);
+          show($('gif'), false);
+          msg('player ready');
+        } catch(e){ msg('ready but play/vol failed'); }
       });
-
-      // If Twitch can’t load the clip (deleted/blocked), fall back to GIF.
-      let failTimer = setTimeout(() => {
-        msg('twitch load timeout -> gif');
-        show($('gif'), !!gif);
-        show($('player'), false);
-      }, 3000);
-
-      embed.addEventListener(Twitch.Embed.VIDEO_PLAY, () => {
-        clearTimeout(failTimer);
-        show($('player'), true);
-        show($('gif'), false);
-      });
-
-      // If Twitch shows the “not available” state, the player will never fire PLAY.
-      // Our 3s timer above handles that and flips to the GIF automatically.
-
+      // 3s safety: if Twitch refuses to play, fallback to gif
+      let timer = setTimeout(() => { if(gif){ $('gif').src = gif; show($('gif'),true); } show($('player'),false); msg('timeout → gif'); }, 3000);
+      embed.addEventListener(Twitch.Embed.VIDEO_PLAY, () => { clearTimeout(timer); });
     } catch(e) {
-      msg('twitch embed error -> gif');
-      if (gif) { $('gif').src = gif; show($('gif'), true); }
+      if (gif){ $('gif').src = gif; show($('gif'),true); }
+      msg('embed error → gif');
     }
   };
-  script.onerror = () => {
-    msg('failed to load twitch sdk -> gif');
-    if (gif) { $('gif').src = gif; show($('gif'), true); }
-  };
-  document.body.appendChild(script);
+  s.onerror = () => { if (gif){ $('gif').src = gif; show($('gif'),true); } msg('sdk load fail → gif'); };
+  document.body.appendChild(s);
 })();
 </script>
