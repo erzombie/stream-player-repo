@@ -1,147 +1,229 @@
 <!doctype html>
+<html lang="en">
+<head>
 <meta charset="utf-8" />
-<title>SO Player</title>
+<meta
+  http-equiv="Content-Security-Policy"
+  content="default-src 'self' https: data: blob:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https://embed.twitch.tv https://clips.twitch.tv; frame-src https://player.twitch.tv https://clips.twitch.tv https://www.twitch.tv; media-src * data: blob:; img-src * data:; connect-src *">
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SO Player</title>
+<!-- Twitch embed SDK for VOD/live -->
+<script src="https://embed.twitch.tv/embed/v1.js"></script>
 <style>
   :root{
-    --pad: 18px;
-    --radius: 18px;
-    --glass: rgba(0,0,0,.72);
-    --text: #f2f2f2;
-    --sub : #d0d0d0;
-    --shadow: 0 18px 40px rgba(0,0,0,.35);
+    --radius: 16px;
+    --shadow: 0 16px 40px rgba(0,0,0,.45);
+    --banner-bg: rgba(30,30,30,.88);
+    --text: #fff;
+    --muted: #cbd5e1;
+    --accent: #ffffff;
   }
-  html,body{margin:0;height:100%;background:transparent;overflow:hidden}
-  #root{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+  html,body{
+    height:100%; width:100%; margin:0; background:transparent; color:var(--text);
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  }
+  .wrap{
+    height:100%; width:100%;
+    display:grid;
+    grid-template-rows: 4fr 1fr; /* ~80% video / 20% banner */
+    align-items:center;
+    justify-items:center;
+    gap:14px;
+    background:transparent;
+  }
 
-  /* Stage = 16:9 area for Twitch or GIF (kept big & centered) */
+  /* Stage (video or gif) */
   #stage{
-    position:absolute; inset:4% 3% 22% 3%;
-    display:flex; align-items:center; justify-content:center;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    background:#111; /* hidden when gif-only */
+    width:min(92vw, 92vh*16/9); /* keep 16:9, max to viewport */
+    aspect-ratio:16/9;
+    display:grid; place-items:center;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    background:#101114; /* visible only when a video is present */
+    overflow:hidden;
   }
-  /* keep a solid aspect even if iframe is still loading */
-  #stage::before{ content:""; display:block; width:100%; aspect-ratio:16/9; }
-  #player, #gif{
-    position:absolute; inset:0; width:100%; height:100%;
-    border:0; border-radius: var(--radius); display:none;
-  }
-  /* Big GIF */
+  #stage.transparent{ background:transparent; box-shadow:none; }
+
+  /* Twitch containers */
+  #twclip, #twvod { width:100%; height:100%; border:0; }
+
+  /* GIF fallback – big and centered */
   #gif{
+    display:none;
+    max-width:96%;
+    max-height:96%;
+    height:auto; width:auto;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
     object-fit:contain;
     background:transparent;
-    display:none;
   }
-  /* Bottom-center banner */
-  #banner{
-    position:absolute; left:50%; bottom:3%;
-    transform:translateX(-50%);
+
+  /* Banner */
+  .banner{
     display:flex; align-items:center; gap:14px;
+    background:var(--banner-bg);
+    border-radius:20px;
     padding:14px 18px;
-    background:var(--glass);
-    border-radius: 16px;
-    color:var(--text);
-    font-family: system-ui, Segoe UI, Roboto, Arial, sans-serif;
-    box-shadow: var(--shadow);
-    pointer-events:none;
+    width:min(68vw, 1100px); /* wider banner */
+    box-shadow:var(--shadow);
+    backdrop-filter: blur(6px);
   }
-  #pfp{
-    width:44px; height:44px; border-radius:50%;
-    background:#222 center/cover no-repeat; flex:0 0 44px;
-    box-shadow: inset 0 0 0 3px rgba(255,255,255,.08);
+  .pfp{
+    width:54px; height:54px; border-radius:999px;
+    box-shadow: inset 0 0 0 3px rgba(255,255,255,.1);
+    background:#222 center/cover no-repeat;
+    flex:0 0 auto;
   }
-  #who{ line-height:1.1 }
-  #name{ font-size:28px; font-weight:800; letter-spacing:.3px }
-  #line{ font-size:14px; color:var(--sub) }
+  .meta{
+    line-height:1.2;
+  }
+  .name{
+    font-weight:900; font-size:40px; letter-spacing:.3px;
+  }
+  .sub{
+    color:var(--muted); font-size:18px;
+  }
 
-  /* When we’re gif-only, remove the stage background and let GIF breathe */
-  .gifOnly #stage{ background:transparent; }
-  .gifOnly #gif{ display:block; width: min(92vw, 92vh); height:auto; inset:auto; }
+  /* Small screens (just in case) */
+  @media (max-width:900px){
+    .name{ font-size:28px; }
+    .sub{ font-size:14px; }
+    .pfp{ width:44px; height:44px; }
+  }
 </style>
+</head>
+<body>
+  <div class="wrap">
+    <div id="stage" class="transparent">
+      <!-- one of these gets used -->
+      <iframe id="twclip" allow="autoplay; fullscreen" style="display:none;"></iframe>
+      <div id="twvod" style="display:none;"></div>
+      <img id="gif" alt="gif fallback" />
+    </div>
 
-<div id="root">
-  <div id="stage">
-    <iframe id="player" allow="autoplay; fullscreen; picture-in-picture"></iframe>
-    <img id="gif" alt="so gif"/>
-  </div>
-
-  <div id="banner">
-    <div id="pfp"></div>
-    <div id="who">
-      <div id="name"></div>
-      <div id="line"></div>
+    <div class="banner" id="banner">
+      <div class="pfp" id="pfp"></div>
+      <div class="meta">
+        <div class="name" id="nameTxt">Guest</div>
+        <div class="sub" id="subTxt">Check out our friend!</div>
+      </div>
     </div>
   </div>
-</div>
 
 <script>
 (function(){
-  const qs      = new URLSearchParams(location.search);
-  const clip    = (qs.get('clip')    || '').trim();
-  const vod     = (qs.get('vod')     || '').trim();
-  const name    = (qs.get('name')    || 'Friend').trim();
-  const profile = (qs.get('profile') || '').trim();
-  const vol     = Math.max(0, Math.min(1, parseFloat(qs.get('vol')||'0.35') || 0.35));
-  const durMs   = parseInt(qs.get('dur') || '0', 10);
-  const gifList = (qs.get('giflist') || '').trim(); // optional index.txt (one path per line)
-  const HOST    = location.hostname || 'localhost';
+  const qs = new URLSearchParams(location.search);
+  const PARENT = location.hostname;               // required by Twitch
+  const name    = qs.get('name')    || 'Friend';
+  const profile = qs.get('profile') || '';
+  const clip    = qs.get('clip')    || '';        // Twitch clip slug
+  const vod     = qs.get('vod')     || '';        // Twitch VOD id
+  const vodStart= +(qs.get('vodStart') || 0);     // seconds
+  const vol     = Math.max(0, Math.min(1, +(qs.get('vol')||0.35)));
+  const passedDur = +(qs.get('dur')||0);          // ms you pass from SB
+  const wantRandomGif = (qs.get('gif')||'').toLowerCase() === 'random';
+
+  // DOM refs
+  const stage  = document.getElementById('stage');
+  const twclip = document.getElementById('twclip');
+  const twvod  = document.getElementById('twvod');
+  const gif    = document.getElementById('gif');
 
   // Banner
-  document.getElementById('name').textContent = name;
-  document.getElementById('line').textContent = 'Check out ' + name + '!';
+  document.getElementById('nameTxt').textContent = name;
+  document.getElementById('subTxt').textContent  = `Check out ${name}!`;
   if (profile) document.getElementById('pfp').style.backgroundImage = `url("${profile}")`;
 
-  const stage  = document.getElementById('stage');
-  const player = document.getElementById('player');
-  const gifEl  = document.getElementById('gif');
+  // --- Helper: pick random gif from /assets/gifs.txt
+  async function pickRandomGif(){
+    try{
+      const base = location.href.replace(/\/so_player\.html.*/,'');
+      const listUrl = base + '/assets/gifs.txt';
+      const res = await fetch(listUrl, {cache:'no-store'});
+      if (!res.ok) throw new Error('gifs.txt not found');
+      const txt = await res.text();
+      const items = txt.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+      if (items.length) {
+        const choice = items[Math.floor(Math.random()*items.length)];
+        return choice.startsWith('http') ? choice : (base + '/assets/' + choice.replace(/^assets\//,''));
+      }
+    }catch(e){ /* ignore */ }
+    // default
+    const base = location.href.replace(/\/so_player\.html.*/,'');
+    return base + '/assets/hellothere.gif';
+  }
 
-  const showPlayer = (src) => {
-    player.src = src;
-    player.style.display = 'block';
-    gifEl.style.display = 'none';
-    stage.classList.remove('gifOnly');
-  };
+  function showGif(url){
+    stage.classList.add('transparent');
+    gif.src = url;
+    gif.style.display = 'block';
+    twclip.style.display = 'none';
+    twvod.style.display  = 'none';
+  }
 
-  const showGif = async () => {
-    let url = 'assets/hellothere.gif';
-    if (gifList){
-      try{
-        const r = await fetch(gifList, {cache:'no-store'});
-        if (r.ok){
-          const lines = (await r.text()).split(/\r?\n/)
-              .map(s=>s.trim())
-              .filter(s=>s && !s.startsWith('#'));
-          if (lines.length){
-            url = lines[Math.floor(Math.random()*lines.length)];
-          }
+  function showClip(slug){
+    stage.classList.remove('transparent');
+    const src = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(slug)}&parent=${encodeURIComponent(PARENT)}&autoplay=true&muted=true`;
+    twclip.src = src;
+    twclip.style.display = 'block';
+    twvod.style.display  = 'none';
+    gif.style.display    = 'none';
+  }
+
+  function showVod(id, start){
+    stage.classList.remove('transparent');
+    twclip.style.display = 'none';
+    gif.style.display    = 'none';
+    twvod.style.display  = 'block';
+
+    const e = new Twitch.Embed('twvod', {
+      width: '100%',
+      height: '100%',
+      layout: 'video',
+      video: id,
+      time: start > 0 ? start + 's' : undefined,
+      autoplay: true,
+      muted: true,         // unmute after READY if possible
+      parent: [PARENT]
+    });
+
+    e.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+      try {
+        const player = e.getPlayer();
+        player.setMuted(false);
+        player.setVolume(vol);
+        // Seek to middle if we didn't get time param but want a nice section:
+        if (!start) {
+          // try a small seek to trigger playback visually
+          player.seek(1);
         }
-      }catch{}
+      } catch(_) {}
+    });
+  }
+
+  async function run(){
+    let mode = 'gif';
+    if (clip) {
+      mode = 'clip';
+      showClip(clip);
+    } else if (vod) {
+      mode = 'vod';
+      showVod(vod, vodStart);
+    } else {
+      const url = wantRandomGif ? await pickRandomGif() : (location.href.replace(/\/so_player\.html.*/,'') + '/assets/hellothere.gif');
+      showGif(url);
     }
-    gifEl.src = url;
-    gifEl.style.display = 'block';
-    player.style.display = 'none';
-    stage.classList.add('gifOnly');
-  };
 
-  const muted = (vol <= 0);
+    // Duration: gif = 6000ms cap, video = passedDur (default 12000 by your render)
+    let dur = passedDur > 0 ? passedDur : (mode === 'gif' ? 6000 : 12000);
+    if (mode === 'gif') dur = Math.min(dur, 6000);
 
-  if (clip){
-    // Twitch Clip embed
-    const src = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(clip)}&parent=${encodeURIComponent(HOST)}&autoplay=true&muted=${muted?'true':'false'}`;
-    showPlayer(src);
-  } else if (vod){
-    // Twitch VOD embed
-    const src = `https://player.twitch.tv/?video=${encodeURIComponent(vod)}&parent=${encodeURIComponent(HOST)}&autoplay=true&muted=${muted?'true':'false'}`;
-    showPlayer(src);
-  } else {
-    showGif();
+    setTimeout(() => { window.close && window.close(); }, dur);
   }
 
-  // Optional page self-timeout only if dur is provided (SB still owns the hide)
-  if (durMs > 0){
-    setTimeout(()=>{ /* no-op; SB hides source */ }, durMs);
-  }
+  run();
 })();
 </script>
+</body>
+</html>
