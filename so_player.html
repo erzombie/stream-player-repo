@@ -233,81 +233,82 @@ text=${P.text||'(auto)'}`);
     hideTimer = setTimeout(()=>{ /* Streamer.bot hides the source */ }, ms);
   }
 
+ <script>
+(function(){
+  /* …everything above stays the same… */
+
   // --- Priority: VOD > Clip > GIF ---
-if (vodId) {
-  const s = document.createElement('script');
-  s.src = 'https://player.twitch.tv/js/embed/v1.js';
-  s.onload = () => {
-    try {
-      const OBS = !!window.obsstudio;                    // true inside OBS/CEF
-      const wantVol = Math.max(0, Math.min(1, vol||0));  // clamp
+  if (P.vod) {
+    const s = document.createElement('script');
+    s.src = 'https://player.twitch.tv/js/embed/v1.js';
+    s.onload = () => {
+      try {
+        const OBS = !!window.obsstudio;
+        const wantVol = Math.max(0, Math.min(1, P.vol || 0));
 
-      const embed = new Twitch.Embed('twitch', {
-        width: '100%',
-        height: '100%',
-        video: vodId,
-        time: vodStart ? `0h0m${parseInt(vodStart,10)||0}s` : undefined,
-        autoplay: true,
-        muted: true,                  // <-- always start muted for autoplay
-        allowfullscreen: true,
-        parent: parents
-      });
+        const embed = new Twitch.Embed('twitch', {
+          width: '100%',
+          height: '100%',
+          video: P.vod,
+          time: P.vodStart ? `0h0m${parseInt(P.vodStart,10)||0}s` : undefined,
+          autoplay: true,
+          muted: true,                // start muted so autoplay is allowed
+          allowfullscreen: true,
+          parent: parents
+        });
 
-      twDiv.style.display = 'block';
-      clipI.style.display = 'none';
-      gif.style.display   = 'none';
+        twDiv.style.display = 'block';
+        clipI.style.display = 'none';
+        gif.style.display   = 'none';
 
-      let ready = false;
-      embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
-        ready = true;
-        try {
-          const player = embed.getPlayer();
-          player.setMuted(true);
-          player.setVolume(0);
-          player.play();
+        let ready = false;
+        embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
+          ready = true;
+          try {
+            const player = embed.getPlayer();
+            player.setMuted(true);
+            player.setVolume(0);
+            player.play();
+            if (wantVol > 0) {
+              setTimeout(() => {
+                try {
+                  if (OBS) player.setMuted(false);     // browsers may ignore
+                  player.setVolume(wantVol);
+                } catch {}
+              }, 600);
+            }
+          } catch {}
+          startTimer(P.dur);
+        });
 
-          // After playback has started, try to fade in volume (OBS allows this)
-          if (wantVol > 0) {
-            setTimeout(() => {
-              try {
-                if (OBS) player.setMuted(false);       // browsers may ignore this
-                player.setVolume(wantVol);
-              } catch {}
-            }, 600);
-          }
-        } catch {}
-        startTimer(durMs);
-      });
+        // If Twitch never gets ready (blocked), fall back to GIF
+        setTimeout(() => { if (!ready) { showGif(P.gif || 'random'); startTimer(6000); } }, 1800);
+      } catch {
+        showGif(P.gif || 'random'); startTimer(6000);
+      }
+    };
+    s.onerror = () => { showGif(P.gif || 'random'); startTimer(6000); };
+    document.body.appendChild(s);
+  }
+  else if (P.clip) {
+    const url =
+      `https://clips.twitch.tv/embed?clip=${encodeURIComponent(P.clip)}&autoplay=true&muted=true` +
+      (parentQS ? `&${parentQS}` : '');
+    clipI.src = url;
+    clipI.allow = 'autoplay; fullscreen; picture-in-picture';
+    clipI.setAttribute('playsinline', 'true');
+    clipI.setAttribute('allowtransparency', 'true');
 
-      // If it never becomes ready (blocked), fall back to GIF quickly
-      setTimeout(() => { if (!ready) { showGif(gifArg||'random'); startTimer(6000); } }, 1800);
-    } catch {
-      showGif(gifArg||'random'); startTimer(6000);
-    }
-  };
-  s.onerror = () => { showGif(gifArg||'random'); startTimer(6000); };
-  document.body.appendChild(s);
-}
-else if (clipId) {
-  // Twitch Clips: must be muted to autoplay
-  const url =
-    `https://clips.twitch.tv/embed?clip=${encodeURIComponent(clipId)}&autoplay=true&muted=true` +
-    (parentQS ? `&${parentQS}` : '');
-  clipI.src = url;
-  clipI.allow = 'autoplay; fullscreen; picture-in-picture';
-  clipI.setAttribute('playsinline', 'true');
-  clipI.setAttribute('allowtransparency', 'true');
+    clipI.style.display = 'block';
+    twDiv.style.display = 'none';
+    gif.style.display   = 'none';
 
-  clipI.style.display = 'block';
-  twDiv.style.display = 'none';
-  gif.style.display   = 'none';
-
-  startTimer(durMs);
-}
-else {
-  showGif(gifArg||'random');
-  startTimer(6000);
-}
+    startTimer(P.dur);
+  }
+  else {
+    showGif(P.gif || 'random');
+    startTimer(6000);
+  }
 })();
 </script>
 
