@@ -35,25 +35,41 @@
   #gif{ display:none; object-fit:contain; background:transparent; }
 
   /* Bottom banner (~20% vibe) */
-  #banner{
-    position:absolute; left:50%; bottom:4.5vh; transform:translateX(-50%);
-    display:flex; align-items:center; gap:14px;
-    padding:14px 22px;
-    background:var(--bannerBg);
-    color:var(--bannerText);
-    border-radius:14px;
-    box-shadow: var(--shadow);
-    max-width:min(88vw, 1200px);
-  }
-  #avatarWrap{
-    width:48px; height:48px; border-radius:999px; overflow:hidden;
-    border:3px solid rgba(0,0,0,.35); box-shadow: inset 0 0 0 2px rgba(255,255,255,.08);
-    flex:0 0 48px;
-  }
-  #avatar{ width:100%; height:100%; object-fit:cover; display:block; }
-  #name{ font-weight:800; font-size:28px; line-height:1; letter-spacing:.2px; }
-  #tag { font-size:16px; color:var(--muted); margin-top:2px; }
-  #textCol{ display:flex; flex-direction:column; }
+#banner{
+  position:absolute; left:50%; bottom:4.5vh; transform:translateX(-50%);
+  display:flex; align-items:center; gap:clamp(10px, 1.6vw, 22px);
+  padding:clamp(12px, 1.2vw, 22px) clamp(16px, 2vw, 28px);
+  background:var(--bannerBg);
+  color:var(--bannerText);
+  border-radius:14px;
+  box-shadow: var(--shadow);
+  max-width:min(88vw, 1400px);
+  pointer-events:none;           /* banner is purely visual */
+}
+
+/* Avatar scales with canvas size */
+#avatarWrap{
+  width:clamp(48px, 6vw, 96px);
+  height:clamp(48px, 6vw, 96px);
+  border-radius:999px; overflow:hidden;
+  border:clamp(2px, .5vw, 4px) solid rgba(0,0,0,.35);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.08);
+  flex:0 0 auto;
+}
+
+#name{
+  font-weight:900;
+  font-size:clamp(28px, 4vw, 64px);
+  line-height:1.05; letter-spacing:.2px;
+}
+
+#tag{
+  font-size:clamp(16px, 2vw, 28px);
+  color:var(--muted);
+  margin-top:clamp(2px, .3vw, 6px);
+}
+
+#textCol{ display:flex; flex-direction:column; }
 </style>
 </head>
 <body>
@@ -110,6 +126,10 @@
   // Random GIF list (add more in /assets)
   const gifPool = [
     '/stream-player-repo/assets/hellothere.gif'
+    '/stream-player-repo/assets/hellothere2.gif'
+    '/stream-player-repo/assets/blinkguy.gif'
+    '/stream-player-repo/assets/bocchi.gif'
+    '/stream-player-repo/assets/elmo.gif'
     // '/stream-player-repo/assets/another1.gif',
     // '/stream-player-repo/assets/another2.gif',
   ];
