@@ -11,64 +11,67 @@
     --bannerText:#fff;
     --muted:#d6d6d6;
     --shadow: 0 14px 38px rgba(0,0,0,.35);
-    --overscan: 4%;               /* show rounded corners nicely in OBS */
+    --overscan: 4%; /* push video under rounded border */
   }
   html,body{height:100%;width:100%;margin:0;background:transparent;overflow:hidden;
             font-family:system-ui,Segoe UI,Roboto,Inter,Arial,sans-serif;}
+  #stage{position:fixed;inset:0;background:transparent}
 
-  #stage{position:fixed;inset:0;background:transparent;}
-
-  /* Video container */
+  /* video box */
   #playerBox{
     position:absolute;left:50%;top:6vh;transform:translateX(-50%);
-    width:min(92vw,160vh);
-    height:min(78vh,51.75vw);
-    border-radius:var(--radius);
-    overflow:hidden;
-    background:rgba(0,0,0,.65);
-    box-shadow:var(--shadow);
+    width:min(92vw,160vh);height:min(78vh,51.75vw);
+    border-radius:var(--radius);overflow:hidden;
     display:flex;align-items:center;justify-content:center;
+    transition:background .18s ease, box-shadow .18s ease;
   }
-  #player{position:relative;width:100%;height:100%;}
+  #playerBox[data-mode="video"]{background:rgba(0,0,0,.65);box-shadow:var(--shadow)}
+  #playerBox[data-mode="gif"]  {background:transparent;box-shadow:none}
+
+  #player{position:relative;width:100%;height:100%}
   #twitch,#clipFrame,#gif{width:100%;height:100%}
 
-  /* overscan the players so rounded corners are visible */
+  /* overscan video */
   #twitch{position:absolute;inset:0}
-  #twitch iframe{
-    position:absolute!important;left:calc(-1*var(--overscan));top:calc(-1*var(--overscan));
-    width:calc(100% + var(--overscan)*2);height:calc(100% + var(--overscan)*2);border:0;
-  }
-  #clipFrame{
-    position:absolute;left:calc(-1*var(--overscan));top:calc(-1*var(--overscan));
-    width:calc(100% + var(--overscan)*2);height:calc(100% + var(--overscan)*2);border:0;display:none;
-  }
+  #twitch iframe{position:absolute!important;
+    left:calc(-1*var(--overscan));top:calc(-1*var(--overscan));
+    width:calc(100% + var(--overscan)*2);height:calc(100% + var(--overscan)*2);
+    border:0}
+
+  #clipFrame{position:absolute;border:0;display:none;
+    left:calc(-1*var(--overscan));top:calc(-1*var(--overscan));
+    width:calc(100% + var(--overscan)*2);height:calc(100% + var(--overscan)*2)}
+
+  /* GIF stays clean (no overscan to avoid blur) */
   #gif{display:none;object-fit:contain;background:transparent}
 
-  /* Banner */
+  /* banner */
   #banner{
     position:absolute;left:50%;bottom:4.5vh;transform:translateX(-50%);
     display:flex;align-items:center;gap:clamp(12px,1.8vw,28px);
     padding:clamp(14px,1.4vw,26px) clamp(18px,2.2vw,34px);
     background:var(--bannerBg);color:var(--bannerText);
     border-radius:14px;box-shadow:var(--shadow);max-width:min(88vw,1400px);
-    pointer-events:none;
+    pointer-events:none
   }
   #avatarWrap{width:clamp(64px,8vw,112px);height:clamp(64px,8vw,112px);
-              border-radius:999px;overflow:hidden;border:clamp(2px,.5vw,4px) solid rgba(0,0,0,.35);
-              box-shadow:inset 0 0 0 2px rgba(255,255,255,.08);flex:0 0 auto}
+    border-radius:999px;overflow:hidden;flex:0 0 auto;
+    border:clamp(2px,.5vw,4px) solid rgba(0,0,0,.35);
+    box-shadow:inset 0 0 0 2px rgba(255,255,255,.08)}
   #avatar{width:100%;height:100%;object-fit:cover;display:block}
+
+  #textCol{display:flex;flex-direction:column}
   #name{font-weight:900;font-size:clamp(28px,4vw,64px);line-height:1.05;letter-spacing:.2px}
   #tag{font-size:clamp(16px,2vw,28px);color:var(--muted);margin-top:clamp(2px,.3vw,6px)}
-  #textCol{display:flex;flex-direction:column}
 </style>
 </head>
 <body>
 <div id="stage">
-  <div id="playerBox">
+  <div id="playerBox" data-mode="gif">
     <div id="player">
       <div id="twitch" style="display:none"></div>
       <iframe id="clipFrame" allow="autoplay; fullscreen; picture-in-picture" style="display:none"></iframe>
-      <img id="gif" alt="so-fallback" />
+      <img id="gif" alt="fallback" />
     </div>
   </div>
 
@@ -83,59 +86,55 @@
 
 <script>
 (function(){
-  /* ---------- param helpers ---------- */
-  const Q = new URLSearchParams(location.search);
+  /* -------- params (with aliases) -------- */
+  const qs = new URLSearchParams(location.search);
   const ALIAS = {
     name:['name','displayName','user','username','target'],
     profile:['profile','avatar','pfp','image','img'],
     clip:['clip','clipId','slug'],
-    vid:['vid','video','videoId','vod'],          // we will treat ONLY highlights here
+    vid:['vid','video','videoId','vod'],
     vol:['vol','volume'],
     dur:['dur','duration','ms'],
     text:['text','banner','subtitle'],
-    gif:['gif','fallback']
+    gif:['gif','fallback','fallbackGif'],
+    fb:['fb','fallback'] // 'soft' (default) or 'hard'
   };
-  const unresolved = v => /^%.*%$/.test(v||'');
-  function getParam(key, def=''){
-    for (const k of (ALIAS[key]||[key])){
-      if (Q.has(k)){ const v = Q.get(k); return unresolved(v) ? def : (v ?? def); }
-    }
-    return def;
-  }
-  function getNum(key, def){
-    const v = parseFloat(getParam(key,''));
-    return Number.isFinite(v) ? v : def;
-  }
+  const val = (k, d='')=>{
+    for (const key of (ALIAS[k]||[k])) if (qs.has(key)) return qs.get(key) || d;
+    return d;
+  };
+  const num = (k, d)=>{ const n = parseFloat(val(k,'')); return Number.isFinite(n) ? n : d; };
 
-  /* ---------- parsed params ---------- */
   const P = {
-    name:    getParam('name','Friend'),
-    profile: getParam('profile',''),
-    clip:    getParam('clip',''),     // prefer this
-    vid:     getParam('vid',''),      // highlight (not archive)
-    vol:     Math.max(0, Math.min(1, getNum('vol',0.35))),
-    dur:     (function(){ const d=parseInt(getParam('dur',''),10);
-               return (Number.isFinite(d) && d>0) ? d : 12000; })(),
-    text:    getParam('text',''),
-    gif:     getParam('gif','random')
+    name: val('name','Friend'),
+    profile: val('profile',''),
+    clip: val('clip',''),
+    vid: val('vid',''),                    // highlight/video fallback (will try, then GIF)
+    vol: Math.max(0, Math.min(1, num('vol', 0.35))),
+    dur: (()=>{ const d=parseInt(val('dur',''),10); return Number.isFinite(d)&&d>0?d:12000; })(),
+    text: val('text',''),
+    gif: val('gif',''),
+    fb: (val('fb','soft')||'soft').toLowerCase() // 'soft' | 'hard'
   };
 
-  /* ---------- banner ---------- */
+  /* -------- banner -------- */
   document.getElementById('name').textContent = P.name;
   document.getElementById('tag').textContent  = P.text || `Check out ${P.name}!`;
   if (P.profile) document.getElementById('avatar').src = P.profile;
 
-  /* ---------- env for Twitch embeds ---------- */
-  const host = (location.hostname || 'localhost');
-  const parents = [host,'localhost','127.0.0.1'].filter((v,i,a)=>v && a.indexOf(v)===i);
+  /* -------- parents for Twitch embeds -------- */
+  const host = location.hostname || 'erzombie.github.io';
+  const parents = [host,'erzombie.github.io','localhost','127.0.0.1']
+    .filter((v,i,a)=>v && a.indexOf(v)===i);
   const parentQS = parents.map(p=>'parent='+encodeURIComponent(p)).join('&');
 
-  /* ---------- elements ---------- */
+  /* -------- elements -------- */
+  const playerBox = document.getElementById('playerBox');
   const twDiv = document.getElementById('twitch');
   const clipI = document.getElementById('clipFrame');
   const gif   = document.getElementById('gif');
 
-  /* ---------- gif pool ---------- */
+  /* -------- GIF pool & helpers -------- */
   const gifPool = [
     '/stream-player-repo/assets/hellothere.gif',
     '/stream-player-repo/assets/hellothere2.gif',
@@ -144,92 +143,90 @@
     '/stream-player-repo/assets/elmo.gif',
     '/stream-player-repo/assets/lick-anime.gif'
   ];
-  function pickGif(arg){
-    if (!arg || arg==='random') return gifPool[Math.floor(Math.random()*gifPool.length)];
-    return arg;
-  }
+  const pickGif = (arg)=> (!arg || arg==='random')
+    ? gifPool[Math.floor(Math.random()*gifPool.length)] : arg;
 
-  /* ---------- teardown + show gif ---------- */
-  function teardownPlayers(){
-    // kill clip iframe
-    try{
-      clipI.src = 'about:blank';
-      clipI.removeAttribute('src');
-      clipI.style.display = 'none';
-    }catch{}
-    // kill twitch embed
-    try{ twDiv.innerHTML = ''; twDiv.style.display = 'none'; }catch{}
-  }
-  function showGif(arg){
-    teardownPlayers();
+  let hideTimer = null;
+  const startTimer = (ms)=>{
+    if (hideTimer) clearTimeout(hideTimer);
+    hideTimer = setTimeout(()=>{/* SB hides the source */}, ms);
+  };
+
+  const showGif = (arg)=>{
+    playerBox.setAttribute('data-mode','gif');
+    // close all players first
+    clipI.src = 'about:blank';
+    clipI.style.display = 'none';
+    twDiv.innerHTML = '';
+    twDiv.style.display = 'none';
+
     gif.src = pickGif(arg);
     gif.style.display = 'block';
-  }
+  };
 
-  /* ---------- timer ---------- */
-  let hideTimer = null;
-  function startTimer(ms){
-    if (hideTimer) clearTimeout(hideTimer);
-    hideTimer = setTimeout(()=>{}, ms); // SB hides layer; we just keep a guard
-  }
-
-  /* ---------- Logic: Clip > Highlight > GIF ---------- */
-  const START_DEADLINE_MS = 2000;     // 2s to prove it can start
+  /* ---------- Prefer CLIP -> VIDEO(highlight) -> GIF ---------- */
 
   if (P.clip) {
-    // Use the official clip embed; MUST be muted to autoplay
-    const url = `https://clips.twitch.tv/embed?clip=${encodeURIComponent(P.clip)}&autoplay=true&muted=true${parentQS?('&'+parentQS):''}`;
-    let started = false;
-
-    clipI.onload = ()=>{ started = true; startTimer(P.dur); };
-    clipI.src = url;
-    clipI.style.display = 'block';
+    // try clip muted + autoplay
+    playerBox.setAttribute('data-mode','video');
     twDiv.style.display = 'none';
-    gif.style.display = 'none';
+    gif.style.display   = 'none';
 
-    setTimeout(()=>{ if (!started) showGif(P.gif); }, START_DEADLINE_MS);
+    clipI.style.display = 'block';
+    clipI.src =
+      `https://clips.twitch.tv/embed?clip=${encodeURIComponent(P.clip)}` +
+      `&autoplay=true&muted=true${parentQS?`&${parentQS}`:''}`;
+
+    if (P.fb === 'hard') {
+      // force GIF after 2s to avoid stuck "click to play" overlays
+      setTimeout(()=>{ showGif(P.gif||'random'); startTimer(6000); }, 2000);
+    } else {
+      // soft mode: let the clip play for full duration
+      startTimer(P.dur);
+    }
+    return;
   }
-  else if (P.vid) {
-    // We treat 'vid' as a HIGHLIGHT. If it can't start quickly, fallback to GIF.
+
+  if (P.vid) {
+    // try highlight/video via embed API; if it never becomes ready, fall back after 2s
+    playerBox.setAttribute('data-mode','video');
+    clipI.style.display = 'none';
+    gif.style.display   = 'none';
+
     const s = document.createElement('script');
     s.src = 'https://player.twitch.tv/js/embed/v1.js';
-    s.onload = () => {
-      let playing = false;
-      try{
+    s.onload = ()=>{
+      let ready = false;
+      try {
         const embed = new Twitch.Embed('twitch', {
           width:'100%', height:'100%',
           video: P.vid,
-          autoplay: true,
-          muted: true,               // autoplay-friendly
-          allowfullscreen: true,
+          autoplay:true, muted:true,
+          allowfullscreen:true,
           parent: parents
         });
         twDiv.style.display = 'block';
-        clipI.style.display = 'none';
-        gif.style.display = 'none';
 
-        embed.addEventListener(Twitch.Embed.VIDEO_READY, () => {
-          try{ embed.getPlayer().play(); }catch{}
-        });
-        embed.addEventListener(Twitch.Embed.PLAY, () => {
-          playing = true;
-          try{ const pl = embed.getPlayer(); pl.setVolume(P.vol||0); if ((P.vol||0)>0) pl.setMuted(false); }catch{}
+        embed.addEventListener(Twitch.Embed.VIDEO_READY, ()=>{
+          ready = true;
+          try{
+            const player = embed.getPlayer();
+            player.setMuted(true);
+            player.play();
+          }catch{}
           startTimer(P.dur);
         });
-      }catch{
-        showGif(P.gif);
-        return;
-      }
-      setTimeout(()=>{ if (!playing) showGif(P.gif); }, START_DEADLINE_MS);
+      } catch {}
+      setTimeout(()=>{ if (!ready){ showGif(P.gif||'random'); startTimer(6000); }}, 2000);
     };
-    s.onerror = ()=> showGif(P.gif);
+    s.onerror = ()=>{ showGif(P.gif||'random'); startTimer(6000); };
     document.body.appendChild(s);
+    return;
   }
-  else {
-    // nothing provided -> GIF
-    showGif(P.gif);
-    startTimer(6000);
-  }
+
+  // nothing → gif
+  showGif(P.gif||'random');
+  startTimer(6000);
 })();
 </script>
 </body>
