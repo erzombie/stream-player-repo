@@ -4,6 +4,7 @@ let bgSrc;
     } else {
       bgSrc = cfg.bgImage || DEFAULT_BG_UP;
     }
+    }
     if (cfg.theme==='down') {
       bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
     } else {
@@ -121,6 +122,7 @@ let bgSrc;
       bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
     } else {
       bgSrc = cfg.bgImage || DEFAULT_BG_UP;
+    }
     }
     if (cfg.theme==='down') bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG;
     const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
