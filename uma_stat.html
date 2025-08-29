@@ -5,29 +5,32 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Uma Stat Overlay</title>
   <style>
-    :root {
-      --uma: #ffb74d;            /* main orange */
-      --umaLite: #ffd585;        /* light yellow/orange */
-      --strokeLight: #ffffff;    /* white outline like game */
-      --font: 'Roboto', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
-      --shadow: 0 10px 28px rgba(0,0,0,.35);
-      --tileW: 260px;
-      --tileH: 90px;
+    :root{
+      --uma1:#ffb347;   /* base orange */
+      --uma2:#ffa326;   /* deeper orange */
+      --umaLite:#ffd78a;/* light */
+      --textOrange:#ff8a00;
+      --white:#ffffff;
+      --strokeW:4px;    /* white outline width */
+      --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+      --shadow:0 14px 40px rgba(0,0,0,.35);
+      --tileW:300px; --tileH:180px;
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
 
-    .popup{position:absolute;display:flex;align-items:center;gap:.5rem;filter:drop-shadow(var(--shadow))}
+    .popup{position:absolute;filter:drop-shadow(var(--shadow))}
 
-    /* SVG chevron tile */
     .tile{position:relative;width:var(--tileW);height:var(--tileH)}
     .tile svg{position:absolute;inset:0;width:100%;height:100%;display:block}
 
-    /* text on top */
-    .chip{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:.35rem;
-          font:900 42px/1 var(--font);color:#e97700; /* orange text */
-          -webkit-text-stroke: 4px var(--strokeLight); text-stroke: 4px var(--strokeLight);}
-    .chip .stat{margin-left:.25rem}
+    .num{position:absolute;left:0;right:0;top:38px;text-align:center;font:900 68px/1 var(--font);color:var(--textOrange);
+         -webkit-text-stroke:var(--strokeW) var(--white)}
+
+    .label{position:absolute;left:50%;transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:.38rem;
+           background:var(--white);border-radius:999px;padding:.32rem .8rem;font:900 30px/1 var(--font);color:#7a5524;
+           -webkit-text-stroke:0 transparent}
+    .icon{width:26px;height:26px;display:inline-block}
 
     @keyframes riseFade{0%{transform:translateY(0) scale(.96);opacity:0}8%{opacity:1}70%{transform:translateY(-90px) scale(1.02);opacity:1}100%{transform:translateY(-150px) scale(1);opacity:0}}
     .anim{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
@@ -38,7 +41,7 @@
   <audio id="sfx" preload="auto"></audio>
 
   <script>
-  // batch-capable overlay with 2-chevron SVG backing
+  // Enhanced double-chevron tile with layered background + big number + label pill
   const qs=new URLSearchParams(location.search);
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
   const cfg={mode:qs.get('mode')||'',stat:qs.get('stat')||'Wit',amount:qs.has('amount')?parseInt(qs.get('amount')||'1',10):null,count:Math.max(1,Math.min(5,parseInt(qs.get('count')||'1',10))),concurrent:Math.max(1,Math.min(2,parseInt(qs.get('concurrent')||'2',10))),dur:parseInt(qs.get('dur')||'1600',10),sound:qs.get('sound')||'',minDelay:parseInt(qs.get('minDelay')||'60',10),maxDelay:parseInt(qs.get('maxDelay')||'180',10)};
@@ -46,39 +49,53 @@
   const stage=document.getElementById('stage');const sfxEl=document.getElementById('sfx');if(cfg.sound)sfxEl.src=cfg.sound;
   const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;const choice=a=>a[Math.floor(Math.random()*a.length)];
 
-  function chevronSVG(){
-    // Two chevrons: back light, front orange (closer to ref)
-    return `<svg viewBox="0 0 520 180" preserveAspectRatio="xMidYMid meet">
+  function svgTile(){
+    return `<svg viewBox='0 0 600 360' preserveAspectRatio='xMidYMid meet'>
       <defs>
-        <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="#ffe29e"/>
-          <stop offset="100%" stop-color="#ffc86d"/>
+        <linearGradient id='og1' x1='0' x2='0' y1='0' y2='1'>
+          <stop offset='0%' stop-color='#ffe5a8'/>
+          <stop offset='100%' stop-color='#ffd27a'/>
         </linearGradient>
-        <linearGradient id="g2" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stop-color="#ffbf66"/>
-          <stop offset="100%" stop-color="#ffb347"/>
+        <linearGradient id='og2' x1='0' x2='0' y1='0' y2='1'>
+          <stop offset='0%' stop-color='#ffc56a'/>
+          <stop offset='100%' stop-color='#ffad3b'/>
         </linearGradient>
-        <filter id="soft" x="-20%" y="-40%" width="140%" height="180%">
-          <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#000" flood-opacity=".28"/>
-        </filter>
+        <linearGradient id='og3' x1='0' x2='0' y1='0' y2='1'>
+          <stop offset='0%' stop-color='#ffb34b'/>
+          <stop offset='100%' stop-color='#ff9f25'/>
+        </linearGradient>
       </defs>
-      <!-- back light chevron -->
-      <path d="M30,90 L260,10 L490,90 L490,160 Q490,170 480,170 L40,170 Q30,170 30,160 Z" fill="url(#g1)" filter="url(#soft)"/>
-      <!-- front orange chevron -->
-      <path d="M50,100 L260,30 L470,100 L470,160 Q470,170 460,170 L60,170 Q50,170 50,160 Z" fill="url(#g2)"/>
-      <!-- white rounded base under chevrons to simulate card -->
-      <rect x="60" y="120" width="400" height="48" rx="18" ry="18" fill="#ffffff" opacity="0.95"/>
-    </svg>`;
+      <!-- back translucent chevron -->
+      <path d='M40,150 L300,40 L560,150 L560,320 Q560,340 540,340 L60,340 Q40,340 40,320 Z' fill='url(#og1)' opacity='.45'/>
+      <!-- middle chevron -->
+      <path d='M60,160 L300,60 L540,160 L540,320 Q540,335 525,335 L75,335 Q60,335 60,320 Z' fill='url(#og2)' opacity='.75'/>
+      <!-- front chevron -->
+      <path d='M85,175 L300,95 L515,175 L515,318 Q515,330 503,330 L97,330 Q85,330 85,318 Z' fill='url(#og3)'/>
+    </svg>`
+  }
+
+  // simple inline icons (stylistic, can be swapped later)
+  function statIcon(stat){
+    const c = '#ff9f25';
+    if(stat==='Stamina') return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M12 21s-7-4.35-7-9a7 7 0 1 1 14 0c0 4.65-7 9-7 9Z'/></svg>`; // heart
+    if(stat==='Power')   return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M4 14c3-3 5-5 8-8l2 2-2 3 4 4-3 2-3-2-2 2z'/></svg>`; // abstract bicep
+    if(stat==='Speed')   return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M3 13h12l-2 2h-8l-2 2h10l-2 2H5' /></svg>`; // speed lines
+    if(stat==='Wit')     return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M12 3a7 7 0 0 1 7 7c0 2.2-1.3 4.1-3.2 5.1L15 19h-6l-.8-3.9A7 7 0 0 1 12 3z'/></svg>`; // bulb-ish
+    if(stat==='Guts')    return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M12 2l3 6h6l-4.5 4 1.5 7-6-3.8L6 19l1.5-7L3 8h6z'/></svg>`; // star badge
+    return '';
   }
 
   function spawnOne({stat,amount,dur,sound}){
     const wrap=document.createElement('div');wrap.className='popup anim';wrap.style.setProperty('--dur',`${dur}ms`);
-    const margin=120;const x=rand(margin,window.innerWidth-margin-260);const y=rand(margin,window.innerHeight-margin);
+    const margin=140;const x=rand(margin,window.innerWidth-margin-320);const y=rand(margin,window.innerHeight-margin);
     wrap.style.left=x+'px';wrap.style.top=y+'px';
 
-    const tile=document.createElement('div');tile.className='tile';tile.innerHTML=chevronSVG();
-    const chip=document.createElement('div');chip.className='chip';chip.innerHTML=`<span class="plus">+${amount}</span><span class="stat">${stat}</span>`;
-    tile.appendChild(chip);wrap.appendChild(tile);stage.appendChild(wrap);
+    const tile=document.createElement('div');tile.className='tile';tile.innerHTML=svgTile();
+
+    const num=document.createElement('div');num.className='num';num.textContent=`+${amount}`;
+    const label=document.createElement('div');label.className='label';label.innerHTML = `${statIcon(stat)} <span>${stat}</span>`;
+
+    tile.appendChild(num);tile.appendChild(label);wrap.appendChild(tile);stage.appendChild(wrap);
 
     if(sound){try{sfxEl.currentTime=0;sfxEl.play().catch(()=>{})}catch(e){}}
     setTimeout(()=>wrap.remove(),dur+120);
@@ -86,7 +103,7 @@
 
   async function batchSpawn(){
     const total=cfg.count;const fixed=cfg.amount??null;const jobs=[];
-    for(let i=0;i<total;i++)jobs.push({stat:(cfg.mode==='v4_random')?choice(STAT_POOL):cfg.stat,amount:(fixed==null&&cfg.mode==='v4_random')?rand(1,20):(fixed??1),delay:rand(cfg.minDelay,cfg.maxDelay)});
+    for(let i=0;i<total;i++)jobs.push({stat:(cfg.mode==='v4_random')?STAT_POOL[Math.floor(Math.random()*STAT_POOL.length)]:cfg.stat,amount:(fixed==null&&cfg.mode==='v4_random')?rand(1,20):(fixed??1),delay:rand(cfg.minDelay,cfg.maxDelay)});
     let inFlight=0,idx=0;return new Promise(res=>{function go(){while(inFlight<cfg.concurrent&&idx<jobs.length){const j=jobs[idx++];inFlight++;setTimeout(()=>{spawnOne({stat:j.stat,amount:j.amount,dur:cfg.dur,sound:cfg.sound});setTimeout(()=>{inFlight--;go();if(idx===jobs.length&&inFlight===0)res()},cfg.dur+150)},j.delay)} } go()});
   }
 
