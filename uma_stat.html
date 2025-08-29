@@ -1,4 +1,9 @@
-let bgSrc = cfg.bgImage || (cfg.theme==='down' ? DEFAULT_BG_DOWN : DEFAULT_BG_UP);
+let bgSrc;
+    if (cfg.theme==='down') {
+      bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
+    } else {
+      bgSrc = cfg.bgImage || DEFAULT_BG_UP;
+    }
     if (cfg.theme==='down') {
       bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
     } else {
@@ -54,7 +59,9 @@ let bgSrc = cfg.bgImage || (cfg.theme==='down' ? DEFAULT_BG_DOWN : DEFAULT_BG_UP
   const DEFAULT_BG_UP = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
   const DEFAULT_BG_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
   const DEFAULT_SFX_UP = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
-  const DEFAULT_SFX_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg'; // <-- replace with your real file
+  const DEFAULT_SFX_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
+  // Fallback alias to catch any older references
+  const DEFAULT_BG = DEFAULT_BG_UP; // <-- replace with your real file
 
   const qs=new URLSearchParams(location.search);
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
@@ -109,7 +116,12 @@ let bgSrc = cfg.bgImage || (cfg.theme==='down' ? DEFAULT_BG_DOWN : DEFAULT_BG_UP
     const tile=document.createElement('div');tile.className='tile';
 
     // Choose background depending on theme
-    let bgSrc = cfg.bgImage || DEFAULT_BG;
+    let bgSrc;
+    if (cfg.theme==='down') {
+      bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
+    } else {
+      bgSrc = cfg.bgImage || DEFAULT_BG_UP;
+    }
     if (cfg.theme==='down') bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG;
     const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
 
