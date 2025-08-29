@@ -1,4 +1,9 @@
-<!doctype html>
+let bgSrc = cfg.bgImage || (cfg.theme==='down' ? DEFAULT_BG_DOWN : DEFAULT_BG_UP);
+    if (cfg.theme==='down') {
+      bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
+    } else {
+      bgSrc = cfg.bgImage || DEFAULT_BG_UP;
+    }<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
