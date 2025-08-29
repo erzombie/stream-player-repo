@@ -5,6 +5,7 @@ let bgSrc;
       bgSrc = cfg.bgImage || DEFAULT_BG_UP;
     }
     }
+    }
     if (cfg.theme==='down') {
       bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
     } else {
@@ -39,9 +40,10 @@ let bgSrc;
     .num{position:absolute;left:0;right:0;top:18px;text-align:center;font:900 64px/1 var(--font);color:var(--textOrange);
          -webkit-text-stroke:var(--strokeW) var(--white)}
 
-    .label{position:absolute;left:50%;transform:translateX(-50%);bottom:16px;display:flex;align-items:center;gap:.38rem;
-           background:var(--white);border-radius:999px;padding:.28rem .7rem;font:900 28px/1 var(--font);color:#7a5524;
-           -webkit-text-stroke:0 transparent}
+    .label{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:block;text-align:center;
+           font:900 46px/1 var(--font);color:var(--textOrange);
+           -webkit-text-stroke:var(--strokeW) var(--white)}
+    .icon{display:none}
     .icon{width:24px;height:24px;display:inline-block}
 
     @keyframes riseFade{0%{transform:translateY(0) scale(.96);opacity:0}8%{opacity:1}70%{transform:translateY(calc(var(--upDist)*-0.6)) scale(1.02);opacity:1}100%{transform:translateY(calc(var(--upDist)*-1)) scale(1);opacity:0}}
@@ -101,11 +103,6 @@ let bgSrc;
 
   function statIcon(stat){
     const c = '#ff9f25';
-    if(stat==='Stamina') return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M12 21s-7-4.35-7-9a7 7 0 1 1 14 0c0 4.65-7 9-7 9Z'/></svg>`;
-    if(stat==='Power')   return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M4 14c3-3 5-5 8-8l2 2-2 3 4 4-3 2-3-2-2 2z'/></svg>`;
-    if(stat==='Speed')   return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M3 13h12l-2 2h-8l-2 2h10l-2 2H5' /></svg>`;
-    if(stat==='Wit')     return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M12 3a7 7 0 0 1 7 7c0 2.2-1.3 4.1-3.2 5.1L15 19h-6l-.8-3.9A7 7 0 0 1 12 3z'/></svg>`;
-    if(stat==='Guts')    return `<svg class='icon' viewBox='0 0 24 24'><path fill='${c}' d='M12 2l3 6h6l-4.5 4 1.5 7-6-3.8L6 19l1.5-7L3 8h6z'/></svg>`;
     return '';
   }
 
@@ -124,6 +121,7 @@ let bgSrc;
       bgSrc = cfg.bgImage || DEFAULT_BG_UP;
     }
     }
+    }
     if (cfg.theme==='down') bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG;
     const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
 
@@ -131,7 +129,7 @@ let bgSrc;
     const prefix = (cfg.theme==='down' && String(amount)[0]!== '-') ? '-' : '+';
     num.textContent=`${prefix}${Math.abs(amount)}`;
 
-    const label=document.createElement('div');label.className='label';label.innerHTML = `${statIcon(stat)} <span>${stat}</span>`;
+    const label=document.createElement('div');label.className='label';label.textContent = stat;
 
     tile.appendChild(num);tile.appendChild(label);wrap.appendChild(tile);stage.appendChild(wrap);
 
