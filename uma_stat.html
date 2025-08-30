@@ -63,8 +63,8 @@
     dur:parseInt(qs.get('dur')||'1600',10),
     sound:qs.get('sound')||DEFAULT_SFX_UP,
     soundDown:qs.get('soundDown')||qs.get('soundNeg')||DEFAULT_SFX_DOWN,
-    minDelay:parseInt(qs.get('minDelay')||'50',10),   // min 0.1s
-    maxDelay:parseInt(qs.get('maxDelay')||'500',10), // up to 0.6s
+    minDelay:parseInt(qs.get('minDelay')||'100',10),   // min 0.1s
+    maxDelay:parseInt(qs.get('maxDelay')||'600',10), // up to 0.6s
     bgImage:qs.get('bgImage')||'',
     bgImageNeg:qs.get('bgImageNeg')||'',
     theme:(qs.get('theme')||'up').toLowerCase(), // 'up' | 'down'
