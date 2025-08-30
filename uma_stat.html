@@ -1,16 +1,4 @@
-let bgSrc;
-    if (cfg.theme==='down') {
-      bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
-    } else {
-      bgSrc = cfg.bgImage || DEFAULT_BG_UP;
-    }
-    }
-    }
-    if (cfg.theme==='down') {
-      bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
-    } else {
-      bgSrc = cfg.bgImage || DEFAULT_BG_UP;
-    }<!doctype html>
+<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -27,7 +15,7 @@ let bgSrc;
       --bgOpacity:0.68;            /* default bg image opacity */
       --upDist:150px;              /* travel distance for theme=up */
       --downDist:150px;            /* travel distance for theme=down */
-      --scale:0.7;                 /* global scale for the tile (70%) */
+      --scale:0.7;                 /* global scale (70%) */
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
@@ -38,12 +26,11 @@ let bgSrc;
     .tile{position:relative;width:var(--tileW);height:var(--tileH)}
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%);opacity:var(--bgOpacity)}
 
-    /* number on top, label below (like reference) */
+    /* number on top, label below (image) */
     .num{position:absolute;left:0;right:0;top:18px;text-align:center;font:900 64px/1 var(--font);color:var(--textOrange);
          -webkit-text-stroke:var(--strokeW) var(--white)}
 
     .labelImg{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;height:38px;object-fit:contain;pointer-events:none;filter:none}
-    .icon{width:24px;height:24px;display:inline-block}
 
     @keyframes riseFade{0%{transform:translateY(0) scale(.96);opacity:0}8%{opacity:1}70%{transform:translateY(calc(var(--upDist)*-0.6)) scale(1.02);opacity:1}100%{transform:translateY(calc(var(--upDist)*-1)) scale(1);opacity:0}}
     .animUp{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
@@ -54,16 +41,13 @@ let bgSrc;
 </head>
 <body>
   <div id="stage"></div>
-  <audio id="sfx" preload="auto"></audio>
 
   <script>
-  // Default background image hard-coded to your GitHub PNG, override with &bgImage=
-  const DEFAULT_BG_UP = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
+  // Defaults
+  const DEFAULT_BG_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
   const DEFAULT_BG_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
-  const DEFAULT_SFX_UP = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
+  const DEFAULT_SFX_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
   const DEFAULT_SFX_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
-  // Fallback alias to catch any older references
-  const DEFAULT_BG = DEFAULT_BG_UP; // <-- replace with your real file
 
   const qs=new URLSearchParams(location.search);
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
@@ -71,13 +55,13 @@ let bgSrc;
     mode:qs.get('mode')||'',
     stat:qs.get('stat')||'Wit',
     amount:qs.has('amount')?parseInt(qs.get('amount')||'1',10):null,
-    count:Math.max(1,Math.min(5,parseInt(qs.get('count')||'1',10))),
-    concurrent:Math.max(1,Math.min(2,parseInt(qs.get('concurrent')||'2',10))),
+    count:Math.max(1,Math.min(7,parseInt(qs.get('count')||'1',10))), // max 7
+    concurrent:1, // only one set at a time
     dur:parseInt(qs.get('dur')||'1600',10),
     sound:qs.get('sound')||DEFAULT_SFX_UP,
     soundDown:qs.get('soundDown')||qs.get('soundNeg')||DEFAULT_SFX_DOWN,
-    minDelay:parseInt(qs.get('minDelay')||'20',10),
-    maxDelay:parseInt(qs.get('maxDelay')||'80',10),
+    minDelay:parseInt(qs.get('minDelay')||'0',10),   // can be instant
+    maxDelay:parseInt(qs.get('maxDelay')||'600',10), // up to 0.6s
     bgImage:qs.get('bgImage')||'',
     bgImageNeg:qs.get('bgImageNeg')||'',
     theme:(qs.get('theme')||'up').toLowerCase(), // 'up' | 'down'
@@ -92,25 +76,25 @@ let bgSrc;
   document.documentElement.style.setProperty('--bgOpacity', String(Math.max(0, Math.min(1, cfg.bgOpacity))));
   document.documentElement.style.setProperty('--scale', String(cfg.scale));
 
+  // Mode shortcuts
   switch(cfg.mode){
-    case'v1_wit5':cfg.stat='Wit';cfg.amount=1;cfg.count=5;cfg.concurrent=2;break;
-    case'v2_guts5':cfg.stat='Guts';cfg.amount=1;cfg.count=5;cfg.concurrent=2;break;
-    case'v3_wit1':cfg.stat='Wit';cfg.amount=1;cfg.count=1;cfg.concurrent=1;break;
-    case'v4_random':cfg.count=Math.floor(Math.random()*5)+1;cfg.concurrent=2;break;
+    case'v1_wit5': cfg.stat='Wit'; cfg.amount=1; cfg.count=5; cfg.concurrent=1; break;
+    case'v2_guts5': cfg.stat='Guts'; cfg.amount=1; cfg.count=5; cfg.concurrent=1; break;
+    case'v3_wit1': cfg.stat='Wit'; cfg.amount=1; cfg.count=1; cfg.concurrent=1; break;
+    case'v4_random': cfg.count=Math.floor(Math.random()*7)+1; cfg.concurrent=1; break;
   }
 
   const stage=document.getElementById('stage');
-  const sfxEl=document.getElementById('sfx');
   const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a; const choice=a=>a[Math.floor(Math.random()*a.length)];
 
-  // Hard-coded mapping to PNG labels instead of SVG icons
+  // PNG labels
   const STAT_LABELS = {
     Speed: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
     Stamina: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
     Power: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
     Guts: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
     Wit: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
-  }
+  };
 
   function spawnOne({stat,amount,dur}){
     const wrap=document.createElement('div');
@@ -123,48 +107,56 @@ let bgSrc;
     wrap.style.left=x+'px';
     wrap.style.top=y+'px';
 
-    const tile=document.createElement('div');
-    tile.className='tile';
+    const node=document.createElement('div'); node.className='node';
+    const tile=document.createElement('div'); tile.className='tile';
 
-    // Choose background depending on theme (cleaned)
-    let bgSrc = (cfg.theme==='down') ? (cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN)
-                                     : (cfg.bgImage || DEFAULT_BG_UP);
-    const img=document.createElement('img');
-    img.src=bgSrc;
-    tile.appendChild(img);
+    // Background (per theme, with overrides)
+    const bgSrc = (cfg.theme==='down') ? (cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN)
+                                       : (cfg.bgImage || DEFAULT_BG_UP);
+    const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
 
     // Number
-    const num=document.createElement('div');
-    num.className='num';
+    const num=document.createElement('div'); num.className='num';
     const prefix = (cfg.theme==='down' && String(amount)[0]!== '-') ? '-' : '+';
-    num.textContent=`${prefix}${Math.abs(amount)}`;
-    tile.appendChild(num);
+    num.textContent=`${prefix}${Math.abs(amount)}`; tile.appendChild(num);
 
     // Label image
-    const labelImg=document.createElement('img');
-    labelImg.className='labelImg';
-    labelImg.src = (STAT_LABELS[stat] || '');
-    tile.appendChild(labelImg);
+    const labelImg=document.createElement('img'); labelImg.className='labelImg';
+    labelImg.src = (STAT_LABELS[stat] || ''); tile.appendChild(labelImg);
 
-    wrap.appendChild(tile);
-    stage.appendChild(wrap);
+    node.appendChild(tile); wrap.appendChild(node); stage.appendChild(wrap);
 
-    // SFX
-    const sfxToPlay = (cfg.theme==='down' && cfg.soundDown) ? cfg.soundDown : cfg.sound;
-    if(sfxToPlay){
-      try{ if(sfxEl.src!==sfxToPlay) sfxEl.src=sfxToPlay; sfxEl.currentTime=0; sfxEl.play().catch(()=>{});}catch(e){}
-    }
+    // SFX per instance (overlap allowed)
+    const sfxToPlay = (cfg.theme==='down') ? cfg.soundDown : cfg.sound;
+    if(sfxToPlay){ try{ const a=new Audio(sfxToPlay); a.volume=cfg.volume; a.play().catch(()=>{});}catch(e){} }
 
     setTimeout(()=>wrap.remove(),dur+120);
   }
 
   async function batchSpawn(){
-    const total=cfg.count;const fixed=cfg.amount??null;const jobs=[];
-    for(let i=0;i<total;i++)jobs.push({stat:(cfg.mode==='v4_random')?STAT_POOL[Math.floor(Math.random()*STAT_POOL.length)]:cfg.stat,amount:(fixed==null&&cfg.mode==='v4_random')?rand(1,20):(fixed??1),delay:rand(cfg.minDelay,cfg.maxDelay)});
-    let inFlight=0,idx=0;return new Promise(res=>{function go(){while(inFlight<cfg.concurrent&&idx<jobs.length){const j=jobs[idx++];inFlight++;setTimeout(()=>{spawnOne({stat:j.stat,amount:j.amount,dur:cfg.dur});setTimeout(()=>{inFlight--;go();if(idx===jobs.length&&inFlight===0)res()},cfg.dur+150)},j.delay)} } go()});
+    const total=cfg.count; const fixed=cfg.amount??null; const jobs=[];
+    for(let i=0;i<total;i++) jobs.push({
+      stat:(cfg.mode==='v4_random')? choice(STAT_POOL) : cfg.stat,
+      amount:(fixed==null&&cfg.mode==='v4_random')? rand(1,20) : (fixed??1),
+      delay:rand(cfg.minDelay,cfg.maxDelay)
+    });
+
+    let inFlight=0, idx=0;
+    return new Promise(res=>{
+      function go(){
+        while(inFlight<cfg.concurrent && idx<jobs.length){
+          const j=jobs[idx++]; inFlight++;
+          setTimeout(()=>{
+            spawnOne({stat:j.stat,amount:j.amount,dur:cfg.dur});
+            setTimeout(()=>{ inFlight--; go(); if(idx===jobs.length && inFlight===0) res(); }, cfg.dur+50);
+          }, j.delay);
+        }
+      }
+      go();
+    });
   }
 
-  (async()=>{await batchSpawn()})();
+  (async()=>{ await batchSpawn() })();
   </script>
 </body>
 </html>
