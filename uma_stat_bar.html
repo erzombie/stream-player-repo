@@ -55,7 +55,13 @@
   <script>
     const chevronUp = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
     const chevronDown = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
-
+    const LABELS = {
+      Speed:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png",
+      Stamina:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png",
+      Power:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png",
+      Guts:   "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png",
+      Wit:    "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png"
+};
     function tweenNumber(stat, target, dur=700){
       const el=document.getElementById('val-'+stat); if(!el) return;
       const start=parseInt(el.textContent||'0',10); const diff=target-start; if(!diff){return;}
