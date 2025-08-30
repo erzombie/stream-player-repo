@@ -2,140 +2,97 @@
 <html>
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Uma Stats Bar</title>
+<title>Uma Stats Bar Overlay</title>
 <style>
   :root{
     --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
-    --tileW: 240px;        /* width per slot; tweak as needed */
-    --tileH: 90px;         /* bar height */
-    --chevOpacity: .60;    /* background chevron opacity */
+    --numColor:#4a2d00;
+    --numShadow:0 1px 2px rgba(0,0,0,.25);
   }
   html,body{margin:0;background:transparent;height:100%}
-  #bar{display:flex;gap:10px;align-items:center;justify-content:center;
-       height:100vh; pointer-events:none; box-sizing:border-box; padding:8px}
+  #bar{display:flex;gap:4px;align-items:flex-start;justify-content:center;
+       height:100vh;pointer-events:none;padding:8px}
 
-  .slot{position:relative;width:var(--tileW);height:var(--tileH);
-        background:rgba(0,0,0,.10);border-radius:14px;backdrop-filter:blur(2px)}
-  .row{position:absolute;inset:0;display:flex;align-items:center;gap:10px;padding:10px}
-  .label{height:36px;flex:0 0 auto;filter:drop-shadow(0 2px 6px rgba(0,0,0,.25))}
-  .val{font:900 36px/1 var(--font);color:#5c3a00; text-shadow:0 1px 0 #fff6}
-  .den{font:700 14px/1 var(--font); color:#7a6756;margin-left:6px;opacity:.7}
-  .numWrap{display:flex; align-items:baseline}
+  .slot{position:relative;width:200px;height:80px;
+        background-size:contain;background-repeat:no-repeat;background-position:center}
+  .val{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+       font:900 32px/1 var(--font);color:var(--numColor);text-shadow:var(--numShadow)}
 
-  /* Chevron that animates in FRONT of number */
-  .chev{position:absolute;left:64px; /* in front of number; adjust if you change layout */
-        top:50%;width:70px;transform:translateY(-50%);opacity:var(--chevOpacity);
-        filter:drop-shadow(0 10px 20px rgba(0,0,0,.35));}
+  /* chevron anim same as before */
+  .chev{position:absolute;left:50%;top:40%;width:60px;
+        transform:translate(-50%,-50%);opacity:.6;pointer-events:none}
+  @keyframes rise {0%{transform:translate(-50%,-20%) scale(.9);opacity:0}
+                   20%{opacity:1}
+                   80%{transform:translate(-50%,-160%) scale(1.05);opacity:1}
+                   100%{transform:translate(-50%,-200%) scale(1);opacity:0}}
+  @keyframes drop {0%{transform:translate(-50%,-80%) scale(.9);opacity:0}
+                   20%{opacity:1}
+                   80%{transform:translate(-50%,40%) scale(1.05);opacity:1}
+                   100%{transform:translate(-50%,80%) scale(1);opacity:0}}
+  .animUp{animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards}
+  .animDown{animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
 
-  @keyframes rise {0%{transform:translateY(16px);opacity:0}
-                   15%{opacity:1}
-                   85%{transform:translateY(-28px);opacity:1}
-                   100%{transform:translateY(-40px);opacity:0}}
-  @keyframes drop {0%{transform:translateY(-16px);opacity:0}
-                   15%{opacity:1}
-                   85%{transform:translateY(28px);opacity:1}
-                   100%{transform:translateY(40px);opacity:0}}
-
-  .animUp   { animation: rise 900ms cubic-bezier(.2,.9,.2,1) forwards }
-  .animDown { animation: drop 900ms cubic-bezier(.2,.9,.2,1) forwards }
-
-  /* gentle number pop on change */
   .pop{animation:pop 400ms ease-out}
-  @keyframes pop{0%{transform:scale(.9)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+  @keyframes pop{0%{transform:translateX(-50%) scale(.9)}
+                 60%{transform:translateX(-50%) scale(1.1)}
+                 100%{transform:translateX(-50%) scale(1)}}
 </style>
 </head>
 <body>
-  <div id="bar">
-    <div class="slot" id="SPEED"><div class="row">
-      <img class="label" src="" id="lblSpeed" alt="Speed"/>
-      <div class="numWrap"><span class="val" id="valSpeed">0</span><span class="den" id="denSpeed">/1200</span></div>
-    </div></div>
-    <div class="slot" id="STAMINA"><div class="row">
-      <img class="label" src="" id="lblStamina" alt="Stamina"/>
-      <div class="numWrap"><span class="val" id="valStamina">0</span><span class="den" id="denStamina">/1200</span></div>
-    </div></div>
-    <div class="slot" id="POWER"><div class="row">
-      <img class="label" src="" id="lblPower" alt="Power"/>
-      <div class="numWrap"><span class="val" id="valPower">0</span><span class="den" id="denPower">/1200</span></div>
-    </div></div>
-    <div class="slot" id="GUTS"><div class="row">
-      <img class="label" src="" id="lblGuts" alt="Guts"/>
-      <div class="numWrap"><span class="val" id="valGuts">0</span><span class="den" id="denGuts">/1200</span></div>
-    </div></div>
-    <div class="slot" id="WIT"><div class="row">
-      <img class="label" src="" id="lblWit" alt="Wit"/>
-      <div class="numWrap"><span class="val" id="valWit">0</span><span class="den" id="denWit">/1200</span></div>
-    </div></div>
-  </div>
+<div id="bar">
+  <div class="slot" id="Speed"><span class="val" id="valSpeed">0</span></div>
+  <div class="slot" id="Stamina"><span class="val" id="valStamina">0</span></div>
+  <div class="slot" id="Power"><span class="val" id="valPower">0</span></div>
+  <div class="slot" id="Guts"><span class="val" id="valGuts">0</span></div>
+  <div class="slot" id="Wit"><span class="val" id="valWit">0</span></div>
+</div>
 
 <script>
 const qs=new URLSearchParams(location.search);
 
-/* Assets (hard-coded to your repo) */
-const LABELS={
-  Speed:  "https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
-  Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
-  Power:  "https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
-  Guts:   "https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
-  Wit:    "https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png",
+const BARS={
+  Speed:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png",
+  Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png",
+  Power:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png",
+  Guts:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png",
+  Wit:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png"
 };
-const CHEV_UP   ="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png";
-const CHEV_DOWN ="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png";
+const CHEV_UP="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png";
+const CHEV_DOWN="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png";
 
-/* Preload */
-const preload = (urls)=>Promise.allSettled(urls.map(u=>new Promise(r=>{
-  try{const im=new Image(); im.onload=im.onerror=()=>r(); im.src=u; if(im.decode)im.decode().then(r).catch(r);}
-  catch{r()}
-}))));
-
-/* Read totals from query (default 0) */
 const totals={
-  Speed  : parseInt(qs.get('speed')  ||'0',10),
-  Stamina: parseInt(qs.get('stamina')||'0',10),
-  Power  : parseInt(qs.get('power')  ||'0',10),
-  Guts   : parseInt(qs.get('guts')   ||'0',10),
-  Wit    : parseInt(qs.get('wit')    ||'0',10),
+  Speed:parseInt(qs.get('speed')||'0',10),
+  Stamina:parseInt(qs.get('stamina')||'0',10),
+  Power:parseInt(qs.get('power')||'0',10),
+  Guts:parseInt(qs.get('guts')||'0',10),
+  Wit:parseInt(qs.get('wit')||'0',10),
 };
-const animStat=(qs.get('anim')||'').toLowerCase();  // e.g. "wit"
-const theme=(qs.get('theme')||'up').toLowerCase();  // "up" | "down"
+const animStat=(qs.get('anim')||'').toLowerCase();
+const theme=(qs.get('theme')||'up').toLowerCase();
 
-/* Fill labels & numbers */
 function setSlot(name){
-  document.getElementById('lbl'+name).src = LABELS[name];
-  document.getElementById('val'+name).textContent = totals[name];
+  const slot=document.getElementById(name);
+  slot.style.backgroundImage=`url(${BARS[name]})`;
+  document.getElementById('val'+name).textContent=totals[name];
 }
-['Speed','Stamina','Power','Guts','Wit'].forEach(setSlot);
+Object.keys(BARS).forEach(setSlot);
 
-/* Animate chosen slot with a chevron in FRONT of the number */
 function animateSlot(statName, theme){
-  const id = statName.charAt(0).toUpperCase()+statName.slice(1); // Speed
-  const slot = document.getElementById(id.toUpperCase());
+  const slot=document.getElementById(statName);
   if(!slot) return;
-
   const chev=document.createElement('img');
   chev.className='chev '+(theme==='down'?'animDown':'animUp');
-  chev.src = theme==='down' ? CHEV_DOWN : CHEV_UP;
+  chev.src= theme==='down'?CHEV_DOWN:CHEV_UP;
   slot.appendChild(chev);
-
-  // pop the number briefly
-  const valEl=document.getElementById('val'+id);
-  valEl.classList.remove('pop');
-  // force reflow
-  void valEl.offsetWidth;
-  valEl.classList.add('pop');
-
-  setTimeout(()=>chev.remove(), 1000);
+  const val=document.getElementById('val'+statName);
+  val.classList.remove('pop'); void val.offsetWidth; val.classList.add('pop');
+  setTimeout(()=>chev.remove(),1000);
 }
 
-/* Boot */
-(async()=>{
-  await preload([
-    ...Object.values(LABELS),
-    CHEV_UP, CHEV_DOWN
-  ]);
-  if(animStat) animateSlot(animStat, theme);
-})();
+if(animStat){
+  const key=animStat.charAt(0).toUpperCase()+animStat.slice(1);
+  animateSlot(key,theme);
+}
 </script>
 </body>
 </html>
