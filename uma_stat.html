@@ -122,7 +122,6 @@ let bgSrc;
       bgSrc = cfg.bgImage || DEFAULT_BG_UP;
     }
     }
-    }
     if (cfg.theme==='down') bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG;
     const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
 
