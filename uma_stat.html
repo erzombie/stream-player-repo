@@ -21,10 +21,10 @@
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
 
     .num{position:absolute;left:0;right:0;top:0px;text-align:center;font:900 64px/1 var(--font);font-weight:900;opacity:0.9;-webkit-text-stroke:var(--strokeW) var(--white);}
-    .num.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 6px rgba(255,168,64,.6),0 0 16px rgba(255,200,120,.45);filter:drop-shadow(0 0 6px rgba(255,138,0,.35)) drop-shadow(0 0 14px rgba(255,208,128,.3));}
-    .num.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 6px rgba(74,144,255,.6),0 0 16px rgba(160,207,255,.45);filter:drop-shadow(0 0 6px rgba(58,141,255,.35)) drop-shadow(0 0 14px rgba(160,207,255,.3));}
+    .num.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(255,138,0,.35));}
+    .num.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(58,141,255,.35));}
 
-    .labelImg{position:absolute;left:50%;transform:translateX(-50%);bottom:-20px;height:58px;object-fit:contain;pointer-events:none;filter:none;opacity:1}
+    .labelImg{position:absolute;left:50%;transform:translateX(-50%);bottom:-30px;height:58px;object-fit:contain;pointer-events:none;filter:none;opacity:1}
 
     @keyframes riseFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,-20px,0) scale(1.05)}70%{transform:translate3d(0,-100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,-150px,0) scale(1);opacity:0}}
     .animUp{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
