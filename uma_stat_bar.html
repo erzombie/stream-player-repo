@@ -7,25 +7,24 @@
   <style>
     body{margin:0;background:transparent;font-family:'Roboto',system-ui,sans-serif;color:#4a2c0a}
     #barWrapper{display:flex;justify-content:center;align-items:flex-start;gap:0;box-shadow:0 6px 18px rgba(0,0,0,.25);border-radius:10px;overflow:hidden;width:max-content;margin:20px auto}
-    .statBox{background:#fdf6eb;flex:1;min-width:150px;padding:8px 12px;text-align:center;position:relative;border-right:1px solid #d8cbb6}
+    .statBox{flex:1;min-width:150px;text-align:center;position:relative;border-right:1px solid #d8cbb6;background:#fdf6eb}
     .statBox:last-child{border-right:none}
-    .statLabel{display:block;margin-bottom:4px;height:42px} /* increased 1.5x */
-    .statLabel img{height:100%;object-fit:contain}
-    .statValue{font-size:40px;font-weight:900;position:relative;z-index:1;}
-    .statValue.pop{animation:valPop .45s ease-out}
-    @keyframes valPop{0%{transform:scale(.92)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
 
+    .statLabel{display:block;background:#3b2412;padding:4px 8px;height:42px;border-radius:6px;margin-bottom:6px}
+    .statLabel img{height:100%;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25))}
+    .statLabel img{height:100%;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,.2))}
+
+    .statValue{font-size:40px;font-weight:900;position:relative;z-index:1;padding:8px 0}
     .chevron{position:absolute;left:50%;transform:translateX(-50%);opacity:0.85;z-index:2;}
     .chevron.up{top:10px;animation:rise 1s ease-out forwards}
     .chevron.down{bottom:10px;animation:drop 1s ease-out forwards}
-    .chevron img{height:42px;} /* bigger chevron */
-
-    .delta{position:absolute;left:50%;top:20%;transform:translate(-50%,-50%);font:900 28px/1 'Roboto',system-ui,sans-serif;-webkit-text-stroke:3px #fff;opacity:.98;z-index:3}
-    .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:rise 1s cubic-bezier(.2,.9,.2,1) forwards}
-    .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:drop 1s cubic-bezier(.2,.9,.2,1) forwards}
 
     @keyframes rise{0%{transform:translate(-50%,20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-20px);opacity:0}}
     @keyframes drop{0%{transform:translate(-50%,-20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,20px);opacity:0}}
+
+    .delta{position:absolute;left:50%;top:35%;transform:translate(-50%,-50%);font:900 22px/1 'Roboto';-webkit-text-stroke:2px #fff;}
+    .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
   </style>
 </head>
 <body>
@@ -56,42 +55,34 @@
     const chevronUp = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
     const chevronDown = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
 
-    function tweenNumber(stat, target, dur=700){
-      const el=document.getElementById('val-'+stat); if(!el) return;
-      const start=parseInt(el.textContent||'0',10); const diff=target-start; if(!diff){return;}
-      const t0=performance.now();
-      function step(t){
-        const p=Math.min(1,(t-t0)/dur);
-        const e=1-Math.pow(1-p,3); // easeOutCubic
-        el.textContent = Math.round(start + diff*e);
-        if(p<1) requestAnimationFrame(step); else { el.textContent=target; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
-      }
-      requestAnimationFrame(step);
-    }
-
     function updateStat(stat, newValue, theme){
       const el=document.getElementById('val-'+stat);
       if(!el)return;
       const old=parseInt(el.textContent)||0;
+      const target=(theme==='down')?-Math.abs(newValue):Math.abs(newValue);
+      const diff=target-old;
 
-      // tween number
-      tweenNumber(stat, newValue, 700);
+      // tween number to the signed target
+      tweenNumber(stat, target, 700);
 
-      // Chevron wrapper
+      // Chevron wrapper (direction based on diff)
       const chevWrap=document.createElement('div');
-      chevWrap.className='chevron '+(theme==='down'?'down':'up');
+      chevWrap.className='chevron '+(diff<0?'down':'up');
       const chevImg=document.createElement('img');
-      chevImg.src=(theme==='down'?chevronDown:chevronUp);
+      chevImg.src=(diff<0?chevronDown:chevronUp);
       chevWrap.appendChild(chevImg);
       document.getElementById('box-'+stat).appendChild(chevWrap);
 
-      // Delta overlay
-      const delta=document.createElement('div');
-      delta.className='delta '+(theme==='down'?'down':'up');
-      const diff=newValue-old; delta.textContent=(diff>0?'+':'')+diff;
-      document.getElementById('box-'+stat).appendChild(delta);
+      // Delta overlay above chevron
+      if(diff!==0){
+        const delta=document.createElement('div');
+        delta.className='delta '+(diff<0?'down':'up');
+        delta.textContent=(diff>0?'+':'')+diff;
+        document.getElementById('box-'+stat).appendChild(delta);
+        setTimeout(()=>delta.remove(),1000);
+      }
 
-      setTimeout(()=>{chevWrap.remove();delta.remove();},1000);
+      setTimeout(()=>chevWrap.remove(),1000);
     }
 
     // demo
