@@ -20,14 +20,20 @@
     .tile{position:relative;width:var(--tileW);height:var(--tileH)}
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
 
-    /* number on top, label below (image) */
+    /* number styles */
     .num{
       position:absolute;left:0;right:0;top:8px;
       text-align:center;font:900 64px/1 var(--font);
       font-weight:900;opacity:0.9;
+      -webkit-text-stroke:var(--strokeW) var(--white);
+    }
+    .num.up{
       background:linear-gradient(to top,#ff8a00,#ffd080);
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      -webkit-text-stroke:var(--strokeW) var(--white);
+    }
+    .num.down{
+      background:linear-gradient(to top,#3a8dff,#a0cfff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
     }
 
     .labelImg{position:absolute;left:50%;transform:translateX(-50%);
@@ -35,20 +41,20 @@
       height:46px;                /* size of stat label image */
       object-fit:contain;pointer-events:none;filter:none;opacity:1}
 
-    /* Animations now use CSS vars --driftX and --finalY set per instance */
+    /* Simplified vertical animations */
     @keyframes riseFade{
-      0%{transform:translate(0,0) scale(.92);opacity:0}
-      10%{opacity:1;transform:translate(calc(var(--driftX)*.2), calc(var(--finalY)*-.15)) scale(1.05)}
-      70%{transform:translate(calc(var(--driftX)*.7), calc(var(--finalY)*.7)) scale(1.02);opacity:1}
-      100%{transform:translate(var(--driftX), var(--finalY)) scale(1);opacity:0}
+      0%{transform:translateY(0) scale(.92);opacity:0}
+      10%{opacity:1;transform:translateY(-20px) scale(1.05)}
+      70%{transform:translateY(-100px) scale(1.02);opacity:1}
+      100%{transform:translateY(-150px) scale(1);opacity:0}
     }
     .animUp{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
 
     @keyframes dropFade{
-      0%{transform:translate(0,0) scale(.92);opacity:0}
-      10%{opacity:1;transform:translate(calc(var(--driftX)*.2), calc(var(--finalY)*.15)) scale(1.05)}
-      70%{transform:translate(calc(var(--driftX)*.7), calc(var(--finalY)*.7)) scale(1.02);opacity:1}
-      100%{transform:translate(var(--driftX), var(--finalY)) scale(1);opacity:0}
+      0%{transform:translateY(0) scale(.92);opacity:0}
+      10%{opacity:1;transform:translateY(20px) scale(1.05)}
+      70%{transform:translateY(100px) scale(1.02);opacity:1}
+      100%{transform:translateY(150px) scale(1);opacity:0}
     }
     .animDown{animation:dropFade var(--dur,1400ms) cubic-bezier(.2,.9,.2,1) forwards}
   </style>
@@ -71,45 +77,22 @@
     Wit: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
   };
 
-  // Preload assets (simple warm-up)
-  const preloadAssets = [DEFAULT_BG_UP, DEFAULT_BG_DOWN, ...Object.values(STAT_LABELS)];
-  preloadAssets.forEach(src=>{const i=new Image(); i.src=src});
-  const preloadSounds = [DEFAULT_SFX_UP, DEFAULT_SFX_DOWN];
-  preloadSounds.forEach(src=>{const a=new Audio(); a.src=src});
-
   const qs=new URLSearchParams(location.search);
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
   const cfg={
-    // SINGLE MODE: random only
     count:Math.max(1,Math.min(7,parseInt(qs.get('count')||String(Math.floor(Math.random()*7)+1),10))),
     statPool:STAT_POOL,
-    theme:(qs.get('theme')||'up').toLowerCase(), // 'up' or 'down' applied to all
-
-    // timing & feel (per-theme)
+    theme:(qs.get('theme')||'up').toLowerCase(), // 'up' or 'down'
     durUp:parseInt(qs.get('durUp')||'1600',10),
     durDown:parseInt(qs.get('durDown')||'1400',10),
-    upDist:parseInt(qs.get('upDist')||'150',10),
-    downDist:parseInt(qs.get('downDist')||'150',10),
-    scaleUp:parseFloat(qs.get('scaleUp')||'0.7'),
-    scaleDown:parseFloat(qs.get('scaleDown')||'0.66'),
-    bgOpacityUp:parseFloat(qs.get('bgOpacityUp')||'0.68'),
-    bgOpacityDown:parseFloat(qs.get('bgOpacityDown')||'0.6'),
-    driftMax:parseInt(qs.get('driftMax')||'30',10),   // px of sideways drift
-    tiltMax:parseInt(qs.get('tiltMax')||'6',10),      // deg of random rotation
-
-    // audio
     soundUp:qs.get('sound')||qs.get('soundUp')||DEFAULT_SFX_UP,
     soundDown:qs.get('soundDown')||qs.get('soundNeg')||DEFAULT_SFX_DOWN,
     volume:Math.max(0, Math.min(1, parseFloat(qs.get('vol')||qs.get('volume')||'1'))),
-
-    // spawn control
     concurrent:1,
     minDelay:parseInt(qs.get('minDelay')||'0',10),
     maxDelay:parseInt(qs.get('maxDelay')||'400',10),
-
-    // visuals
     tileW:parseInt(qs.get('tileW')||'260',10),
-    tileH:parseInt(qs.get('tileH')||'180',10),
+    tileH:parseInt(qs.get('tileH')||'180',10)
   };
   document.documentElement.style.setProperty('--tileW', cfg.tileW+'px');
   document.documentElement.style.setProperty('--tileH', cfg.tileH+'px');
@@ -121,12 +104,6 @@
     const wrap=document.createElement('div');
     const isDown = (cfg.theme==='down');
     wrap.className='popup ' + (isDown ? 'animDown' : 'animUp');
-
-    // per-instance motion variables
-    const drift = (rand(-cfg.driftMax,cfg.driftMax)) + 'px';
-    const finalY = (isDown ? cfg.downDist : -cfg.upDist) + 'px';
-    wrap.style.setProperty('--driftX', drift);
-    wrap.style.setProperty('--finalY', finalY);
     wrap.style.setProperty('--dur', (isDown?cfg.durDown:cfg.durUp)+'ms');
 
     const margin=140;
@@ -135,26 +112,20 @@
     wrap.style.left=x+'px';
     wrap.style.top=y+'px';
 
-    const node=document.createElement('div');
-    node.style.transform = `scale(${isDown?cfg.scaleDown:cfg.scaleUp}) rotate(${rand(-cfg.tiltMax,cfg.tiltMax)}deg)`;
     const tile=document.createElement('div'); tile.className='tile';
 
-    // Background (per theme)
     const bgSrc = isDown ? DEFAULT_BG_DOWN : DEFAULT_BG_UP;
-    const img=document.createElement('img'); img.src=bgSrc; img.style.opacity = isDown?cfg.bgOpacityDown:cfg.bgOpacityUp; tile.appendChild(img);
+    const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
 
-    // Number
-    const num=document.createElement('div'); num.className='num';
+    const num=document.createElement('div'); num.className='num ' + (isDown? 'down':'up');
     const prefix = (isDown && String(amount)[0]!== '-') ? '-' : '+';
     num.textContent=`${prefix}${Math.abs(amount)}`; tile.appendChild(num);
 
-    // Label image
     const labelImg=document.createElement('img'); labelImg.className='labelImg';
     labelImg.src = (STAT_LABELS[stat] || ''); tile.appendChild(labelImg);
 
-    node.appendChild(tile); wrap.appendChild(node); stage.appendChild(wrap);
+    wrap.appendChild(tile); stage.appendChild(wrap);
 
-    // SFX per instance (overlap allowed)
     const sfxToPlay = isDown ? cfg.soundDown : cfg.soundUp;
     if(sfxToPlay){ try{ const a=new Audio(sfxToPlay); a.volume=cfg.volume; a.play().catch(()=>{});}catch(e){} }
 
