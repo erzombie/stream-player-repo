@@ -5,161 +5,93 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Uma Stat Bar Overlay</title>
   <style>
-    :root{
-      --cream:#fdf6eb;
-      --divider:#d8cbb6;
-      --num:#4a2c0a;
-      --fxMs:900ms;
-    }
-    html,body{margin:0;background:transparent}
-    body{font-family:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:var(--num)}
-
-    /* Bar wrapper */
-    #barWrapper{
-      display:flex;gap:0;margin:20px auto;width:max-content;
-      border-radius:12px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.25);
-    }
-
-    /* Each stat cell */
-    .stat{
-      position:relative;display:flex;flex-direction:column;align-items:center;
-      background:var(--cream);border-right:1px solid var(--divider);
-      min-width:140px;
-    }
+    body{margin:0;background:transparent;font-family:'Roboto',system-ui,sans-serif;color:#4a2c0a}
+    #barWrapper{display:flex;justify-content:center;align-items:flex-start;gap:0;box-shadow:0 6px 18px rgba(0,0,0,.25);border-radius:10px;overflow:hidden;width:max-content;margin:20px auto}
+    .stat{background:#fdf6eb;flex:1;min-width:140px;text-align:center;position:relative;border-right:1px solid #d8cbb6}
     .stat:last-child{border-right:none}
+    .label{background:#4b2f1a;color:#fff;font-weight:700;padding:4px;font-size:15px}
+    .label img{height:22px;object-fit:contain;display:block;margin:0 auto}
+    .value{font-size:32px;font-weight:900;position:relative;z-index:1;padding:6px 0}
+    .value.animateUp{animation:valRise 0.6s ease-out}
+    .value.animateDown{animation:valDrop 0.6s ease-out}
 
-    /* PNG label row */
-    .label{width:100%;height:36px;display:flex;align-items:center;justify-content:center;padding:4px 6px;background:#3b2412}
-    .label img{height:100%;width:auto;display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25))}
+    @keyframes valRise{0%{transform:translateY(8px);opacity:0}40%{opacity:1}100%{transform:translateY(0);opacity:1}}
+    @keyframes valDrop{0%{transform:translateY(-8px);opacity:0}40%{opacity:1}100%{transform:translateY(0);opacity:1}}
 
-    /* Number row */
-    .value{position:relative;z-index:4; /* above chevron */
-      font-weight:900;font-size:32px;line-height:1;padding:10px 0 12px;}
-    .value.pop{animation:valPop .45s ease-out}
-    @keyframes valPop{0%{transform:scale(.92)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+    .chevron{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);opacity:.8;z-index:0}
+    .chevron.up{animation:chevRise 0.8s cubic-bezier(.2,.9,.2,1) forwards}
+    .chevron.down{animation:chevDrop 0.8s cubic-bezier(.2,.9,.2,1) forwards}
 
-    /* Make the value move WITH the chevron */
-    @keyframes riseVal{0%{transform:translateY(-10%) scale(.98)}20%{transform:translateY(-25%) scale(1.02)}80%{transform:translateY(-65%)}100%{transform:translateY(-90%)}}
-    @keyframes dropVal{0%{transform:translateY(-65%) scale(.98)}20%{transform:translateY(-48%) scale(1.02)}80%{transform:translateY(-8%)}100%{transform:translateY(12%)}}
-    .value.moveUp{animation:riseVal var(--fxMs) cubic-bezier(.2,.9,.2,1)}
-    .value.moveDown{animation:dropVal var(--fxMs) cubic-bezier(.2,.9,.2,1)}
+    @keyframes chevRise{0%{transform:translate(-50%,20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-20px);opacity:0}}
+    @keyframes chevDrop{0%{transform:translate(-50%,-20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,20px);opacity:0}}
 
-    /* FX (chevron + delta) sit OVER/behind the number */
-    .fx{position:absolute;inset:36px 0 0 0;pointer-events:none;z-index:3}
-    .fx img.chev{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-      height:34px;opacity:.85;filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))}
-    @keyframes rise{0%{transform:translate(-50%,-10%) scale(.92);opacity:0}
-                    20%{opacity:1}
-                    80%{transform:translate(-50%,-110%) scale(1.04);opacity:1}
-                    100%{transform:translate(-50%,-150%) scale(1);opacity:0}}
-    @keyframes drop{0%{transform:translate(-50%,-90%) scale(.92);opacity:0}
-                    20%{opacity:1}
-                    80%{transform:translate(-50%,25%) scale(1.04);opacity:1}
-                    100%{transform:translate(-50%,70%) scale(1);opacity:0}}
-    .animUp{animation:rise var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards}
-    .animDown{animation:drop var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards}
-
-    /* Delta bubble (+N / -N) on top of everything */
-    .delta{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-      z-index:5;font:900 22px/1 'Roboto',sans-serif;-webkit-text-stroke:3px #fff;opacity:.98;
-      filter:drop-shadow(0 6px 14px rgba(0,0,0,.28))}
-    .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
-    .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .delta{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font:900 20px/1 'Roboto',sans-serif;-webkit-text-stroke:3px #fff;z-index:2}
+    .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
   </style>
 </head>
 <body>
   <div id="barWrapper">
     <div class="stat" id="s_Speed">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png" alt="Speed"></div>
+      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png" alt="Speed"/></div>
       <div class="value" id="val_Speed">0</div>
-      <div class="fx" id="fx_Speed"></div>
     </div>
     <div class="stat" id="s_Stamina">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png" alt="Stamina"></div>
+      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png" alt="Stamina"/></div>
       <div class="value" id="val_Stamina">0</div>
-      <div class="fx" id="fx_Stamina"></div>
     </div>
     <div class="stat" id="s_Power">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png" alt="Power"></div>
+      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png" alt="Power"/></div>
       <div class="value" id="val_Power">0</div>
-      <div class="fx" id="fx_Power"></div>
     </div>
     <div class="stat" id="s_Guts">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png" alt="Guts"></div>
+      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png" alt="Guts"/></div>
       <div class="value" id="val_Guts">0</div>
-      <div class="fx" id="fx_Guts"></div>
     </div>
     <div class="stat" id="s_Wit">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png" alt="Wit"></div>
+      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png" alt="Wit"/></div>
       <div class="value" id="val_Wit">0</div>
-      <div class="fx" id="fx_Wit"></div>
     </div>
   </div>
 
   <script>
-    // Assets
     const CHEV_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
     const CHEV_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
 
-    // Tween the number from current → target
-    function tweenNumber(el, target, dur=900){
-      const start = parseInt(el.textContent||'0',10);
-      const diff  = target - start;
-      if(!diff){ return; }
-      const t0 = performance.now();
-      function step(t){
-        const p = Math.min(1,(t - t0)/dur);
-        const e = 1 - Math.pow(1 - p, 3);         // easeOutCubic
-        el.textContent = Math.round(start + diff*e);
-        if(p<1) requestAnimationFrame(step); else { el.textContent = target; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
-      }
-      requestAnimationFrame(step);
+    function animateStat(stat,newVal,theme){
+      const el=document.getElementById('val_'+stat);
+      if(!el)return;
+      const old=parseInt(el.textContent)||0;
+      el.textContent=newVal;
+
+      el.classList.remove('animateUp','animateDown');
+      void el.offsetWidth;
+      el.classList.add(theme==='down'?'animateDown':'animateUp');
+
+      // Chevron
+      const chev=document.createElement('img');
+      chev.src=(theme==='down'?CHEV_DOWN:CHEV_UP);
+      chev.className='chevron '+(theme==='down'?'down':'up');
+      chev.style.height='28px';
+      el.parentElement.appendChild(chev);
+      setTimeout(()=>chev.remove(),800);
+
+      // Delta
+      const delta=document.createElement('div');
+      delta.className='delta '+(theme==='down'?'down':'up');
+      const diff=newVal-old;
+      delta.textContent=(diff>0?'+':'')+diff;
+      el.parentElement.appendChild(delta);
+      setTimeout(()=>delta.remove(),800);
     }
 
-    // Animate a single stat change
-    function updateStat(stat, newValue, theme='up'){
-      const valEl = document.getElementById('val_'+stat);
-      const fx = document.getElementById('fx_'+stat);
-      if(!valEl || !fx) return;
-
-      const old  = parseInt(valEl.textContent||'0',10);
-      const diff = newValue - old;
-
-      // Number tween + move with chevron
-      valEl.classList.remove('moveUp','moveDown'); void valEl.offsetWidth;
-      valEl.classList.add(diff<0 ? 'moveDown' : 'moveUp');
-      tweenNumber(valEl, newValue, 900);
-
-      // Chevron behind the number
-      const chev = new Image();
-      chev.src = (diff<0 || theme==='down') ? CHEV_DOWN : CHEV_UP;
-      chev.className = 'chev ' + ((diff<0 || theme==='down') ? 'animDown' : 'animUp');
-      fx.appendChild(chev);
-
-      // Delta on top
-      if(diff !== 0){
-        const d = document.createElement('div');
-        d.className = 'delta ' + (diff<0 ? 'down' : 'up');
-        d.textContent = (diff>0?'+':'') + diff;
-        fx.appendChild(d);
-        setTimeout(()=> d.remove(), 950);
-      }
-      setTimeout(()=> chev.remove(), 950);
-    }
-
-    // Optional demo (&demo=1)
-    const qs = new URLSearchParams(location.search);
-    if(qs.get('demo')==='1'){
-      setTimeout(()=>updateStat('Speed',120,'up'), 600);
-      setTimeout(()=>updateStat('Stamina',87,'up'),1000);
-      setTimeout(()=>updateStat('Power',20,'up'),1400);
-      setTimeout(()=>updateStat('Guts',0,'down'),1800);
-      setTimeout(()=>updateStat('Wit',0,'down'),2200);
-    }
-
-    // Streamer.bot hook (optional): window.postMessage({type:'umaStat', stat:'Speed', value:123, theme:'up'})
-    window.addEventListener('message',(e)=>{
-      const m=e.data||{}; if(m.type==='umaStat'&&m.stat&&typeof m.value!=='undefined'){updateStat(m.stat,Number(m.value),m.theme||'up');}
+    // Demo sequence
+    window.addEventListener('load',()=>{
+      setTimeout(()=>animateStat('Speed',120,'up'),1000);
+      setTimeout(()=>animateStat('Stamina',87,'up'),1600);
+      setTimeout(()=>animateStat('Power',20,'up'),2200);
+      setTimeout(()=>animateStat('Guts',-40,'down'),2800);
+      setTimeout(()=>animateStat('Wit',-30,'down'),3400);
     });
   </script>
 </body>
