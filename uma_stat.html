@@ -30,10 +30,16 @@
     .num.up{
       background:linear-gradient(to top,#ff8a00,#ffd080);
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      /* glow */
+      text-shadow: 0 0 6px rgba(255,168,64,.6), 0 0 16px rgba(255,200,120,.45);
+      filter: drop-shadow(0 0 6px rgba(255,138,0,.35)) drop-shadow(0 0 14px rgba(255,208,128,.3));
     }
     .num.down{
       background:linear-gradient(to top,#3a8dff,#a0cfff);
       -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      /* glow */
+      text-shadow: 0 0 6px rgba(74,144,255,.6), 0 0 16px rgba(160,207,255,.45);
+      filter: drop-shadow(0 0 6px rgba(58,141,255,.35)) drop-shadow(0 0 14px rgba(160,207,255,.3));
     }
 
     .labelImg{position:absolute;left:50%;transform:translateX(-50%);
