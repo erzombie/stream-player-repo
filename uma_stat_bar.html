@@ -14,7 +14,7 @@
     .statLabel img{height:100%;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25))}
     .statLabel img{height:100%;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,.2))}
 
-    .statValue{font-size:40px;font-weight:900;position:relative;z-index:1;padding:8px 0}
+    .statValue{font-size:34px;font-weight:900;position:relative;z-index:1;line-height:1;padding-top:2px}
     .chevron{position:absolute;left:50%;transform:translateX(-50%);opacity:0.85;z-index:2;}
     .chevron.up{top:10px;animation:rise 1s ease-out forwards}
     .chevron.down{bottom:10px;animation:drop 1s ease-out forwards}
@@ -25,6 +25,12 @@
     .delta{position:absolute;left:50%;top:35%;transform:translate(-50%,-50%);font:900 22px/1 'Roboto';-webkit-text-stroke:2px #fff;}
     .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
     .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+      .statValue.pop{animation:valPop .45s ease-out}
+    @keyframes valPop{0%{transform:scale(.92)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+    .statValue.rollUp{animation:rollUp .7s ease-out}
+    .statValue.rollDown{animation:rollDown .7s ease-out}
+    @keyframes rollUp{0%{transform:translateY(8px)}60%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+    @keyframes rollDown{0%{transform:translateY(-8px)}60%{transform:translateY(6px)}100%{transform:translateY(0)}}
   </style>
 </head>
 <body>
@@ -62,7 +68,11 @@
       const target=(theme==='down')?-Math.abs(newValue):Math.abs(newValue);
       const diff=target-old;
 
-      // tween number to the signed target
+      // directional roll cue
+      el.classList.remove('rollUp','rollDown'); void el.offsetWidth;
+      el.classList.add(diff<0?'rollDown':'rollUp');
+
+      // tween number
       tweenNumber(stat, target, 700);
 
       // Chevron wrapper (direction based on diff)
@@ -73,7 +83,7 @@
       chevWrap.appendChild(chevImg);
       document.getElementById('box-'+stat).appendChild(chevWrap);
 
-      // Delta overlay above chevron
+      // Delta overlay
       if(diff!==0){
         const delta=document.createElement('div');
         delta.className='delta '+(diff<0?'down':'up');
@@ -85,13 +95,16 @@
       setTimeout(()=>chevWrap.remove(),1000);
     }
 
+      setTimeout(()=>chevWrap.remove(),1000);
+    }
+
     // demo
     window.addEventListener('load',()=>{
-      setTimeout(()=>updateStat('Speed',120,'up'),1000);
-      setTimeout(()=>updateStat('Stamina',90,'up'),1500);
-      setTimeout(()=>updateStat('Power',60,'up'),2000);
-      setTimeout(()=>updateStat('Guts',40,'down'),2500);
-      setTimeout(()=>updateStat('Wit',30,'down'),3000);
+      setTimeout(()=>updateStat('Speed',120,'up'),600);
+      setTimeout(()=>updateStat('Stamina',90,'up'),1000);
+      setTimeout(()=>updateStat('Power',60,'up'),1400);
+      setTimeout(()=>updateStat('Guts',40,'down'),1800);
+      setTimeout(()=>updateStat('Wit',30,'down'),2200);
     });
   </script>
 </body>
