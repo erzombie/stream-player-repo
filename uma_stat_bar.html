@@ -31,23 +31,23 @@
 <body>
   <div id="barWrapper">
     <div class="statBox" id="box-Speed">
-      <span class="statLabel"><img src="bar_speed.png" alt="Speed"></span>
+      <span class="statLabel"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png" alt=""></span>
       <div class="statValue" id="val-Speed">0</div>
     </div>
     <div class="statBox" id="box-Stamina">
-      <span class="statLabel"><img src="bar_stamina.png" alt="Stamina"></span>
+      <span class="statLabel"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png" alt=""></span>
       <div class="statValue" id="val-Stamina">0</div>
     </div>
     <div class="statBox" id="box-Power">
-      <span class="statLabel"><img src="bar_power.png" alt="Power"></span>
+      <span class="statLabel"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png" alt=""></span>
       <div class="statValue" id="val-Power">0</div>
     </div>
     <div class="statBox" id="box-Guts">
-      <span class="statLabel"><img src="bar_guts.png" alt="Guts"></span>
+      <span class="statLabel"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png" alt=""></span>
       <div class="statValue" id="val-Guts">0</div>
     </div>
     <div class="statBox" id="box-Wit">
-      <span class="statLabel"><img src="bar_wit.png" alt="Wit"></span>
+      <span class="statLabel"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png" alt=""></span>
       <div class="statValue" id="val-Wit">0</div>
     </div>
   </div>
@@ -55,13 +55,7 @@
   <script>
     const chevronUp = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
     const chevronDown = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
-    const LABELS = {
-      Speed:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png",
-      Stamina:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png",
-      Power:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png",
-      Guts:   "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png",
-      Wit:    "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png"
-};
+
     function tweenNumber(stat, target, dur=700){
       const el=document.getElementById('val-'+stat); if(!el) return;
       const start=parseInt(el.textContent||'0',10); const diff=target-start; if(!diff){return;}
@@ -76,33 +70,29 @@
     }
 
     function updateStat(stat, newValue, theme){
-  const el = document.getElementById('val-'+stat);
-  if(!el) return;
-  const old = parseInt(el.textContent)||0;
-  const diff = newValue - old;
+      const el=document.getElementById('val-'+stat);
+      if(!el)return;
+      const old=parseInt(el.textContent)||0;
 
-  // Number tween
-  tweenNumber(stat, newValue);
+      // tween number
+      tweenNumber(stat, newValue, 700);
 
-  // Chevron
-  const chev = document.createElement('img');
-  chev.src = (theme==='down'?chevronDown:chevronUp);
-  chev.className = 'chevron ' + (theme==='down'?'down':'up');
-  chev.style.height = '42px';  // larger
-  document.getElementById('box-'+stat).appendChild(chev);
+      // Chevron wrapper
+      const chevWrap=document.createElement('div');
+      chevWrap.className='chevron '+(theme==='down'?'down':'up');
+      const chevImg=document.createElement('img');
+      chevImg.src=(theme==='down'?chevronDown:chevronUp);
+      chevWrap.appendChild(chevImg);
+      document.getElementById('box-'+stat).appendChild(chevWrap);
 
-  // Delta
-  if(diff !== 0){
-    const d = document.createElement('div');
-    d.className = 'delta ' + (diff<0?'down':'up');
-    d.textContent = (diff>0?'+':'') + diff;
-    chev.insertAdjacentElement('afterend', d);
-    setTimeout(()=>d.remove(), 1000);
-  }
+      // Delta overlay
+      const delta=document.createElement('div');
+      delta.className='delta '+(theme==='down'?'down':'up');
+      const diff=newValue-old; delta.textContent=(diff>0?'+':'')+diff;
+      document.getElementById('box-'+stat).appendChild(delta);
 
-  setTimeout(()=>chev.remove(), 1000);
-}
-
+      setTimeout(()=>{chevWrap.remove();delta.remove();},1000);
+    }
 
     // demo
     window.addEventListener('load',()=>{
@@ -110,7 +100,7 @@
       setTimeout(()=>updateStat('Stamina',90,'up'),1500);
       setTimeout(()=>updateStat('Power',60,'up'),2000);
       setTimeout(()=>updateStat('Guts',40,'down'),2500);
-      setTimeout(()=>updateStat('Wit',-30,'down'),3000);
+      setTimeout(()=>updateStat('Wit',30,'down'),3000);
     });
   </script>
 </body>
