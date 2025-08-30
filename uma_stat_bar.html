@@ -70,29 +70,33 @@
     }
 
     function updateStat(stat, newValue, theme){
-      const el=document.getElementById('val-'+stat);
-      if(!el)return;
-      const old=parseInt(el.textContent)||0;
+  const el = document.getElementById('val-'+stat);
+  if(!el) return;
+  const old = parseInt(el.textContent)||0;
+  const diff = newValue - old;
 
-      // tween number
-      tweenNumber(stat, newValue, 700);
+  // Number tween
+  tweenNumber(stat, newValue);
 
-      // Chevron wrapper
-      const chevWrap=document.createElement('div');
-      chevWrap.className='chevron '+(theme==='down'?'down':'up');
-      const chevImg=document.createElement('img');
-      chevImg.src=(theme==='down'?chevronDown:chevronUp);
-      chevWrap.appendChild(chevImg);
-      document.getElementById('box-'+stat).appendChild(chevWrap);
+  // Chevron
+  const chev = document.createElement('img');
+  chev.src = (theme==='down'?chevronDown:chevronUp);
+  chev.className = 'chevron ' + (theme==='down'?'down':'up');
+  chev.style.height = '42px';  // larger
+  document.getElementById('box-'+stat).appendChild(chev);
 
-      // Delta overlay
-      const delta=document.createElement('div');
-      delta.className='delta '+(theme==='down'?'down':'up');
-      const diff=newValue-old; delta.textContent=(diff>0?'+':'')+diff;
-      document.getElementById('box-'+stat).appendChild(delta);
+  // Delta
+  if(diff !== 0){
+    const d = document.createElement('div');
+    d.className = 'delta ' + (diff<0?'down':'up');
+    d.textContent = (diff>0?'+':'') + diff;
+    chev.insertAdjacentElement('afterend', d);
+    setTimeout(()=>d.remove(), 1000);
+  }
 
-      setTimeout(()=>{chevWrap.remove();delta.remove();},1000);
-    }
+  setTimeout(()=>chev.remove(), 1000);
+  }
+
 
     // demo
     window.addEventListener('load',()=>{
