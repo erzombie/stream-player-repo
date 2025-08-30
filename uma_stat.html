@@ -7,10 +7,10 @@
   <style>
     :root{
       --white:#ffffff;
-      --strokeW:4px;    /* white outline width */
+      --strokeW:4px;
       --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
       --shadow:0 14px 40px rgba(0,0,0,.35);
-      --tileW:260px; --tileH:180px; /* overridable via URL */
+      --tileW:260px; --tileH:180px;
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
@@ -18,80 +18,43 @@
     .popup{position:absolute;filter:drop-shadow(var(--shadow));will-change:transform,opacity}
 
     .tile{position:relative;width:var(--tileW);height:var(--tileH)}
-    .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
+    .tile img.bg{ position:absolute; left:50%; top:50%; width:100%; height:auto; transform:translate(-50%,-50%); }
 
-    /* number styles */
-    .num{
-      position:absolute;left:0;right:0;top:8px;
-      text-align:center;font:900 64px/1 var(--font);
-      font-weight:900;opacity:0.9;
-      -webkit-text-stroke:var(--strokeW) var(--white);
-    }
-    .num.up{
-      background:linear-gradient(to top,#ff8a00,#ffd080);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      /* glow */
-      text-shadow: 0 0 6px rgba(255,168,64,.6), 0 0 16px rgba(255,200,120,.45);
-      filter: drop-shadow(0 0 6px rgba(255,138,0,.35)) drop-shadow(0 0 14px rgba(255,208,128,.3));
-    }
-    .num.down{
-      background:linear-gradient(to top,#3a8dff,#a0cfff);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-      /* glow */
-      text-shadow: 0 0 6px rgba(74,144,255,.6), 0 0 16px rgba(160,207,255,.45);
-      filter: drop-shadow(0 0 6px rgba(58,141,255,.35)) drop-shadow(0 0 14px rgba(160,207,255,.3));
-    }
+    .num{position:absolute;left:0;right:0;top:8px;text-align:center;font:900 64px/1 var(--font);font-weight:900;opacity:0.9;-webkit-text-stroke:var(--strokeW) var(--white);}
+    .num.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 6px rgba(255,168,64,.6),0 0 16px rgba(255,200,120,.45);filter:drop-shadow(0 0 6px rgba(255,138,0,.35)) drop-shadow(0 0 14px rgba(255,208,128,.3));}
+    .num.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 6px rgba(74,144,255,.6),0 0 16px rgba(160,207,255,.45);filter:drop-shadow(0 0 6px rgba(58,141,255,.35)) drop-shadow(0 0 14px rgba(160,207,255,.3));}
 
-    .labelImg{position:absolute;left:50%;transform:translateX(-50%);
-      bottom:-15px;               /* spacing from number */
-      height:46px;                /* size of stat label image */
-      object-fit:contain;pointer-events:none;filter:none;opacity:1}
+    .labelImg{position:absolute;left:50%;transform:translateX(-50%);bottom:-15px;height:46px;object-fit:contain;pointer-events:none;filter:none;opacity:1}
 
-    /* Simplified vertical animations */
-    @keyframes riseFade{
-      0%{transform:translate3d(0,0,0) scale(.92);opacity:0}
-      10%{opacity:1;transform:translate3d(0,-20px,0) scale(1.05)}
-      70%{transform:translate3d(0,-100px,0) scale(1.02);opacity:1}
-      100%{transform:translate3d(0,-150px,0) scale(1);opacity:0}
-    }
-      10%{opacity:1;transform:translateY(-20px) scale(1.05)}
-      70%{transform:translateY(-100px) scale(1.02);opacity:1}
-      100%{transform:translateY(-150px) scale(1);opacity:0}
-    }
+    @keyframes riseFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,-20px,0) scale(1.05)}70%{transform:translate3d(0,-100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,-150px,0) scale(1);opacity:0}}
     .animUp{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
 
-    @keyframes dropFade{
-      0%{transform:translate3d(0,0,0) scale(.92);opacity:0}
-      10%{opacity:1;transform:translate3d(0,20px,0) scale(1.05)}
-      70%{transform:translate3d(0,100px,0) scale(1.02);opacity:1}
-      100%{transform:translate3d(0,150px,0) scale(1);opacity:0}
-    }
-      10%{opacity:1;transform:translateY(20px) scale(1.05)}
-      70%{transform:translateY(100px) scale(1.02);opacity:1}
-      100%{transform:translateY(150px) scale(1);opacity:0}
-    }
+    @keyframes dropFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,20px,0) scale(1.05)}70%{transform:translate3d(0,100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,150px,0) scale(1);opacity:0}}
     .animDown{animation:dropFade var(--dur,1400ms) cubic-bezier(.2,.9,.2,1) forwards}
-      /* Low perf mode disables heavy glows/shadows */
+
+    /* sparkle */
+    .sparkle{position:absolute;left:50%;top:50%;width:160%;height:160%;transform:translate(-50%,-50%) scale(.6) rotate(var(--rot,0deg));opacity:0;pointer-events:none;border-radius:50%;background:radial-gradient(circle at center, rgba(255,255,255,.75) 0 18%, rgba(255,255,255,0) 60%),conic-gradient(from 0deg, var(--sparkColor, rgba(255,168,64,.55)) 0 10deg, transparent 10deg 22deg);mix-blend-mode:screen;filter:blur(.3px)}
+    @keyframes sparkleBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.6) rotate(var(--rot,0deg))}25%{opacity:.85}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15) rotate(calc(var(--rot,0deg) + 28deg))}}
+
     body.low .popup{filter:none}
-    body.low .num.up, body.low .num.down{ text-shadow:none; filter:none }
+    body.low .num.up, body.low .num.down{text-shadow:none;filter:none}
   </style>
 </head>
 <body>
-  <div id="stage"></div>
+  <div id="stage" style="visibility:hidden"></div>
 
   <script>
-  // Defaults
-  const DEFAULT_BG_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
-  const DEFAULT_BG_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
-  const DEFAULT_SFX_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
-  const DEFAULT_SFX_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
+  const DEFAULT_BG_UP='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
+  const DEFAULT_BG_DOWN='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
+  const DEFAULT_SFX_UP='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
+  const DEFAULT_SFX_DOWN='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
 
-  const STAT_LABELS = {
-    Speed: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
-    Stamina: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
-    Power: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
-    Guts: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
-    Wit: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
+  const STAT_LABELS={
+    Speed:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
+    Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
+    Power:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
+    Guts:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
+    Wit:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
   };
 
   const qs=new URLSearchParams(location.search);
@@ -99,104 +62,76 @@
   const cfg={
     count:Math.max(1,Math.min(7,parseInt(qs.get('count')||String(Math.floor(Math.random()*7)+1),10))),
     statPool:STAT_POOL,
-    theme:(qs.get('theme')||'up').toLowerCase(), // 'up' or 'down'
+    theme:(qs.get('theme')||'up').toLowerCase(),
     durUp:parseInt(qs.get('durUp')||'1600',10),
     durDown:parseInt(qs.get('durDown')||'1400',10),
     soundUp:qs.get('sound')||qs.get('soundUp')||DEFAULT_SFX_UP,
     soundDown:qs.get('soundDown')||qs.get('soundNeg')||DEFAULT_SFX_DOWN,
-    volume:Math.max(0, Math.min(1, parseFloat(qs.get('vol')||qs.get('volume')||'1'))),
+    volume:Math.max(0,Math.min(1,parseFloat(qs.get('vol')||qs.get('volume')||'1'))),
     concurrent:1,
     minDelay:parseInt(qs.get('minDelay')||'0',10),
     maxDelay:parseInt(qs.get('maxDelay')||'400',10),
     tileW:parseInt(qs.get('tileW')||'260',10),
     tileH:parseInt(qs.get('tileH')||'180',10),
-    lowPerf: qs.get('lowPerf')==='1'
-  
+    lowPerf:qs.get('lowPerf')==='1'
   };
   document.documentElement.style.setProperty('--tileW', cfg.tileW+'px');
   document.documentElement.style.setProperty('--tileH', cfg.tileH+'px');
-  if (cfg.lowPerf) document.body.classList.add('low');
+  if(cfg.lowPerf)document.body.classList.add('low');
 
   const stage=document.getElementById('stage');
-  const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a; const choice=a=>a[Math.floor(Math.random()*a.length)];
+  const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;const choice=a=>a[Math.floor(Math.random()*a.length)];
 
   function spawnOne({stat,amount,dur}){
     const wrap=document.createElement('div');
-    const isDown = (cfg.theme==='down');
-    wrap.className='popup ' + (isDown ? 'animDown' : 'animUp');
-    wrap.style.setProperty('--dur', (isDown?cfg.durDown:cfg.durUp)+'ms');
+    const isDown=(cfg.theme==='down');
+    wrap.className = 'popup';
+    wrap.style.animation = `${isDown ? 'dropFade' : 'riseFade'} ${isDown ? cfg.durDown : cfg.durUp}ms cubic-bezier(.2,.9,.2,1) forwards`;
+
 
     const margin=140;
     const x=rand(margin,window.innerWidth-margin-cfg.tileW);
     const y=rand(margin,window.innerHeight-margin-cfg.tileH);
-    wrap.style.left=x+'px';
-    wrap.style.top=y+'px';
+    wrap.style.left=x+'px';wrap.style.top=y+'px';
 
-    const tile=document.createElement('div'); tile.className='tile';
+    const tile=document.createElement('div');tile.className='tile';
 
-    const bgSrc = isDown ? DEFAULT_BG_DOWN : DEFAULT_BG_UP;
-    const img=document.createElement('img'); img.src=bgSrc; img.style.opacity = 0.6; tile.appendChild(img);
+    const bgSrc=isDown?DEFAULT_BG_DOWN:DEFAULT_BG_UP;
+    const img=document.createElement('img'); img.className='bg'; img.src=bgSrc; img.style.opacity=0.6; tile.appendChild(img);
 
-    // Sparkle burst (above chevron but below text)
-    const sp=document.createElement('div'); sp.className='sparkle';
-    sp.style.setProperty('--rot', (Math.random()*40-20)+'deg');
-    sp.style.setProperty('--sparkColor', (isDown? 'rgba(100,170,255,.55)' : 'rgba(255,168,64,.55)'));
-    sp.style.animation = `sparkleBurst ${cfg.sparkMs||420}ms ease-out forwards`;
-    sp.style.transform += ` scale(${(cfg.sparkScale||1)})`;
+    const sp=document.createElement('div');sp.className='sparkle';
+    sp.style.setProperty('--rot',(Math.random()*40-20)+'deg');
+    sp.style.setProperty('--sparkColor',(isDown?'rgba(100,170,255,.55)':'rgba(255,168,64,.55)'));
+    sp.style.animation=`sparkleBurst 420ms ease-out forwards`;
     tile.appendChild(sp);
 
-    const num=document.createElement('div'); num.className='num ' + (isDown? 'down':'up');
-    const prefix = (isDown && String(amount)[0]!== '-') ? '-' : '+';
-    num.textContent=`${prefix}${Math.abs(amount)}`; tile.appendChild(num);
+    const num=document.createElement('div');num.className='num '+(isDown?'down':'up');
+    const prefix=(isDown&&String(amount)[0]!=='-')?'-':'+';
+    num.textContent=`${prefix}${Math.abs(amount)}`;tile.appendChild(num);
 
-    const labelImg=document.createElement('img'); labelImg.className='labelImg';
-    labelImg.src = (STAT_LABELS[stat] || ''); tile.appendChild(labelImg);
+    const labelImg=document.createElement('img');labelImg.className='labelImg';
+    labelImg.src=(STAT_LABELS[stat]||'');tile.appendChild(labelImg);
 
-    wrap.appendChild(tile); stage.appendChild(wrap);
+    wrap.appendChild(tile);stage.appendChild(wrap);
 
-    const sfxToPlay = isDown ? cfg.soundDown : cfg.soundUp;
-    if(sfxToPlay){ try{ const a=new Audio(sfxToPlay); a.volume=cfg.volume; a.play().catch(()=>{});}catch(e){} }
+    const sfxToPlay=isDown?cfg.soundDown:cfg.soundUp;
+    if(sfxToPlay){try{const a=new Audio(sfxToPlay);a.volume=cfg.volume;a.play().catch(()=>{});}catch(e){}}
 
-    setTimeout(()=>wrap.remove(), (isDown?cfg.durDown:cfg.durUp) + 140);
+    setTimeout(()=>wrap.remove(),(isDown?cfg.durDown:cfg.durUp)+140);
   }
 
   async function batchSpawn(){
-    const total=cfg.count; const jobs=[];
-    for(let i=0;i<total;i++) jobs.push({
-      stat: choice(cfg.statPool),
-      amount: rand(1,15),
-      delay: rand(cfg.minDelay,cfg.maxDelay)
-    });
-
-    let inFlight=0, idx=0;
-    return new Promise(res=>{
-      function go(){
-        while(inFlight<cfg.concurrent && idx<jobs.length){
-          const j=jobs[idx++]; inFlight++;
-          setTimeout(()=>{
-            spawnOne({stat:j.stat,amount:j.amount,dur: (cfg.theme==='down'?cfg.durDown:cfg.durUp)});
-            setTimeout(()=>{ inFlight--; go(); if(idx===jobs.length && inFlight===0) res(); }, (cfg.theme==='down'?cfg.durDown:cfg.durUp)+50);
-          }, j.delay);
-        }
-      }
-      go();
-    });
+    const total=cfg.count;const jobs=[];
+    for(let i=0;i<total;i++)jobs.push({stat:choice(cfg.statPool),amount:rand(1,15),delay:rand(cfg.minDelay,cfg.maxDelay)});
+    let inFlight=0,idx=0;
+    return new Promise(res=>{function go(){while(inFlight<cfg.concurrent&&idx<jobs.length){const j=jobs[idx++];inFlight++;setTimeout(()=>{spawnOne({stat:j.stat,amount:j.amount,dur:(cfg.theme==='down'?cfg.durDown:cfg.durUp)});setTimeout(()=>{inFlight--;go();if(idx===jobs.length&&inFlight===0)res()},(cfg.theme==='down'?cfg.durDown:cfg.durUp)+50)},j.delay)}}go()});
   }
 
   window.addEventListener('load',()=>{
-    const stage=document.getElementById('stage');
-    stage.style.visibility='hidden';
-
-    const imgList=[DEFAULT_BG_UP, DEFAULT_BG_DOWN, ...Object.values(STAT_LABELS)];
-    const loadImg=u=>new Promise(r=>{try{const im=new Image(); im.onload=im.onerror=()=>r(); im.src=u; if(im.decode) im.decode().then(()=>r()).catch(()=>r());}catch(e){r();}});
-    const loadAud=u=>new Promise(r=>{try{const a=new Audio(); a.src=u; const to=setTimeout(()=>r(),1500); a.addEventListener('canplaythrough',()=>{clearTimeout(to); r();},{once:true}); a.addEventListener('error',()=>{clearTimeout(to); r();},{once:true}); a.load();}catch(e){r();}});
-
-    (async()=>{
-      await Promise.allSettled(imgList.map(loadImg));
-      await Promise.allSettled([loadAud(DEFAULT_SFX_UP), loadAud(DEFAULT_SFX_DOWN)]);
-      stage.style.visibility='visible';
-      await batchSpawn();
-    })();
+    const imgList=[DEFAULT_BG_UP,DEFAULT_BG_DOWN,...Object.values(STAT_LABELS)];
+    const loadImg=u=>new Promise(r=>{try{const im=new Image();im.onload=im.onerror=()=>r();im.src=u;if(im.decode)im.decode().then(()=>r()).catch(()=>r());}catch(e){r();}});
+    const loadAud=u=>new Promise(r=>{try{const a=new Audio();a.src=u;const to=setTimeout(()=>r(),1500);a.addEventListener('canplaythrough',()=>{clearTimeout(to);r()},{once:true});a.addEventListener('error',()=>{clearTimeout(to);r()},{once:true});a.load()}catch(e){r();}});
+    (async()=>{await Promise.allSettled(imgList.map(loadImg));await Promise.allSettled([loadAud(DEFAULT_SFX_UP),loadAud(DEFAULT_SFX_DOWN)]);stage.style.visibility='visible';await batchSpawn()})();
   });
   </script>
 </body>
