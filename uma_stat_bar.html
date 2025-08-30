@@ -5,161 +5,81 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Uma Stat Bar Overlay</title>
   <style>
-    :root{
-      --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
-      --header:#4b2f1a;         /* not used in this minimal bar but kept for themeing */
-      --body:#fff4e0;
-      --divider:#d0bfa8;
-      --num:#5a381e;
-      --panelShadow:0 10px 28px rgba(0,0,0,.35);
-      --chevOpacity:.65;       /* chevron opacity */
-    }
+    body{margin:0;background:transparent;font-family:'Roboto',system-ui,sans-serif;color:#4a2c0a}
+    #barWrapper{display:flex;justify-content:center;align-items:flex-start;gap:0;box-shadow:0 6px 18px rgba(0,0,0,.25);border-radius:10px;overflow:hidden;width:max-content;margin:20px auto}
+    .statBox{background:#fdf6eb;flex:1;min-width:150px;padding:4px 10px;text-align:center;position:relative;border-right:1px solid #d8cbb6;display:flex;flex-direction:column;align-items:center}
+    .statBox:last-child{border-right:none}
+    .statLabel{background:#4b2f1a;width:100%;padding:4px 0;margin-bottom:6px;display:flex;justify-content:center;align-items:center;border-radius:4px}
+    .statLabel img{height:22px;object-fit:contain}
+    .statValue{font-size:36px;font-weight:900;position:relative;z-index:1;}
+    .chevron{position:absolute;left:50%;transform:translateX(-50%);opacity:0.85;z-index:2;}
+    .chevron.up{top:20px;animation:rise 1s ease-out forwards}
+    .chevron.down{bottom:20px;animation:drop 1s ease-out forwards}
 
-    html,body{margin:0;background:transparent;height:100%}
-    body{display:flex;justify-content:center;align-items:center;font-family:var(--font)}
-
-    .bar-container{display:flex;background:var(--body);border-radius:8px;box-shadow:var(--panelShadow);overflow:hidden}
-
-    .stat{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:6px 12px;border-right:2px solid var(--divider);min-width:140px}
-    .stat:last-child{border-right:none}
-
-    .stat img.label{width:92px;height:auto;object-fit:contain;margin-bottom:2px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.2))}
-
-    /* Number */
-    .value{position:relative;font-weight:900;color:var(--num);text-align:center;line-height:1;font-size:36px;min-width:74px}
-    .value.pop{animation:valPop .42s ease-out}
-    @keyframes valPop{0%{transform:scale(.92)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
-
-    /* FX layer sits ABOVE the number */
-    .fx{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
-    .fx img.chev{position:absolute;left:50%;top:50%;width:64px;opacity:var(--chevOpacity);transform:translate(-50%,-50%);filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))}
-
-    @keyframes rise{0%{transform:translate(-50%,-10%) scale(.9);opacity:0}20%{opacity:1}80%{transform:translate(-50%,-115%) scale(1.05);opacity:1}100%{transform:translate(-50%,-150%) scale(1);opacity:0}}
-    @keyframes drop{0%{transform:translate(-50%,-90%) scale(.9);opacity:0}20%{opacity:1}80%{transform:translate(-50%,35%) scale(1.05);opacity:1}100%{transform:translate(-50%,70%) scale(1);opacity:0}}
-    .animUp{animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards}
-    .animDown{animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
-
-    /* Delta bubble (+N / -N) */
-    .delta{position:absolute;left:50%;top:20%;transform:translate(-50%,-50%);font:900 24px/1 var(--font);-webkit-text-stroke:3px #fff;opacity:.98;filter:drop-shadow(0 8px 16px rgba(0,0,0,.30))}
-    .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards}
-    .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
+    @keyframes rise{0%{transform:translate(-50%,20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-20px);opacity:0}}
+    @keyframes drop{0%{transform:translate(-50%,-20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,20px);opacity:0}}
   </style>
 </head>
 <body>
-  <div class="bar-container">
-    <!-- Each .stat has a foreground FX layer to render on TOP of the number -->
-    <div class="stat" id="s_Speed">
-      <img class="label" src="bar_speed.png" alt="Speed"/>
-      <div class="value" id="val_Speed">0</div>
-      <div class="fx" id="fx_Speed"></div>
+  <div id="barWrapper">
+    <div class="statBox" id="box-Speed">
+      <span class="statLabel"><img id="img-Speed" alt="Speed"></span>
+      <div class="statValue" id="val-Speed">0</div>
     </div>
-    <div class="stat" id="s_Stamina">
-      <img class="label" src="bar_stamina.png" alt="Stamina"/>
-      <div class="value" id="val_Stamina">0</div>
-      <div class="fx" id="fx_Stamina"></div>
+    <div class="statBox" id="box-Stamina">
+      <span class="statLabel"><img id="img-Stamina" alt="Stamina"></span>
+      <div class="statValue" id="val-Stamina">0</div>
     </div>
-    <div class="stat" id="s_Power">
-      <img class="label" src="bar_power.png" alt="Power"/>
-      <div class="value" id="val_Power">0</div>
-      <div class="fx" id="fx_Power"></div>
+    <div class="statBox" id="box-Power">
+      <span class="statLabel"><img id="img-Power" alt="Power"></span>
+      <div class="statValue" id="val-Power">0</div>
     </div>
-    <div class="stat" id="s_Guts">
-      <img class="label" src="bar_guts.png" alt="Guts"/>
-      <div class="value" id="val_Guts">0</div>
-      <div class="fx" id="fx_Guts"></div>
+    <div class="statBox" id="box-Guts">
+      <span class="statLabel"><img id="img-Guts" alt="Guts"></span>
+      <div class="statValue" id="val-Guts">0</div>
     </div>
-    <div class="stat" id="s_Wit">
-      <img class="label" src="bar_wit.png" alt="Wit"/>
-      <div class="value" id="val_Wit">0</div>
-      <div class="fx" id="fx_Wit"></div>
+    <div class="statBox" id="box-Wit">
+      <span class="statLabel"><img id="img-Wit" alt="Wit"></span>
+      <div class="statValue" id="val-Wit">0</div>
     </div>
   </div>
 
   <script>
-    // ---- Config / assets ----
-    const CHEV_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
-    const CHEV_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
+    const chevronUp = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
+    const chevronDown = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
+
+    // label PNGs (absolute URLs) + preload + setter
     const LABELS = {
-      Speed:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png",
-      Stamina:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png",
-      Power:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png",
-      Guts:   "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png",
-      Wit:    "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png"
-};
-
-    // Parse query params so Streamer.bot can drive this overlay directly
-    const qs = new URLSearchParams(location.search);
-    const totals = {
-      Speed:   parseInt(qs.get('speed')   || '0', 10),
-      Stamina: parseInt(qs.get('stamina') || '0', 10),
-      Power:   parseInt(qs.get('power')   || '0', 10),
-      Guts:    parseInt(qs.get('guts')    || '0', 10),
-      Wit:     parseInt(qs.get('wit')     || '0', 10)
+      Speed:   'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png',
+      Stamina: 'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png',
+      Power:   'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png',
+      Guts:    'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png',
+      Wit:     'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png'
     };
-    const anim   = (qs.get('anim')   || '').trim();   // e.g. 'Wit'
-    const theme  = (qs.get('theme')  || 'up').toLowerCase();
-    const deltaQ = parseInt(qs.get('delta') || '0', 10); // e.g. +7 / -7
+    function preload(urls){return Promise.allSettled(urls.map(u=>new Promise(r=>{try{const i=new Image();i.onload=i.onerror=()=>r();i.src=u;if(i.decode)i.decode().then(r).catch(r);}catch{r()}})));}
+    function setLabels(){for(const k of Object.keys(LABELS)){const el=document.getElementById('img-'+k); if(el) el.src=LABELS[k];}}
 
-    // Write initial totals
-    for (const k of Object.keys(totals)) updateValue(k, totals[k], false);
-
-    // If an anim target is provided, play chevron + delta and tween the number
-    if (anim) animateChange(anim, totals[anim], deltaQ, theme);
-
-    // ---- helpers ----
-    function setText(id, txt){ const el = document.getElementById(id); if (el) el.textContent = txt; }
-
-    function updateValue(stat, newVal, pop=true){
-      const el = document.getElementById('val_'+stat);
-      if (!el) return;
-      el.textContent = newVal;
-      if (pop){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+    function updateStat(stat, newValue, theme){
+      const el=document.getElementById('val-'+stat);
+      if(!el)return;
+      const old=parseInt(el.textContent)||0;
+      el.textContent=newValue;
+      const chev=document.createElement('img');
+      chev.src=(theme==='down'?chevronDown:chevronUp);
+      chev.className='chevron '+(theme==='down'?'down':'up');
+      chev.style.height='28px';
+      document.getElementById('box-'+stat).appendChild(chev);
+      setTimeout(()=>chev.remove(),1000);
     }
 
-    // Smooth counting from current displayed value to target
-    function tweenNumber(stat, target, dur=600){
-      const el = document.getElementById('val_'+stat);
-      if (!el) return;
-      const start = parseInt(el.textContent || '0', 10);
-      const diff = target - start;
-      if (!diff){ updateValue(stat, target); return; }
-      const t0 = performance.now();
-      function tick(t){
-        const p = Math.min(1, (t - t0)/dur);
-        // easeOutCubic
-        const e = 1 - Math.pow(1 - p, 3);
-        const cur = Math.round(start + diff * e);
-        el.textContent = cur;
-        if (p < 1) requestAnimationFrame(tick); else updateValue(stat, target);
-      }
-      requestAnimationFrame(tick);
-    }
-
-    function animateChange(stat, targetVal, delta=0, theme='up'){
-      const fx = document.getElementById('fx_'+stat);
-      if (!fx) return;
-      // Chevron on top
-      const chev = new Image();
-      chev.src = (theme === 'down') ? CHEV_DOWN : CHEV_UP;
-      chev.className = 'chev ' + (theme === 'down' ? 'animDown' : 'animUp');
-      fx.appendChild(chev);
-
-      // Delta bubble
-      if (delta){
-        const d = document.createElement('div');
-        d.className = 'delta ' + (delta < 0 ? 'down' : 'up');
-        d.textContent = (delta > 0 ? '+' : '') + delta;
-        fx.appendChild(d);
-        setTimeout(()=> d.remove(), 950);
-      }
-
-      // Number tween behind the FX
-      tweenNumber(stat, targetVal, 650);
-      setTimeout(()=> chev.remove(), 950);
-    }
-
-    // Example: manual test without Streamer.bot
-    // setTimeout(()=>{ animateChange('Speed', 1234, +15, 'up'); }, 1200);
+    // demo
+    window.addEventListener('load', async()=>{ await preload(Object.values(LABELS)); setLabels();
+      setTimeout(()=>updateStat('Speed',120,'up'),1000);
+      setTimeout(()=>updateStat('Stamina',90,'up'),1500);
+      setTimeout(()=>updateStat('Power',60,'up'),2000);
+      setTimeout(()=>updateStat('Guts',40,'down'),2500);
+      setTimeout(()=>updateStat('Wit',30,'down'),3000);
+    });
   </script>
 </body>
 </html>
