@@ -9,102 +9,82 @@
     #barWrapper{display:flex;justify-content:center;align-items:flex-start;gap:0;box-shadow:0 6px 18px rgba(0,0,0,.25);border-radius:10px;overflow:hidden;width:max-content;margin:20px auto}
     .stat{background:#fdf6eb;flex:1;min-width:140px;text-align:center;position:relative;border-right:1px solid #d8cbb6}
     .stat:last-child{border-right:none}
-    .label{background:#4b2f1a;color:#fff;padding:6px;font-weight:700;font-size:14px}
-    .label img{height:24px;object-fit:contain}
-    .value{font-size:32px;font-weight:900;position:relative;z-index:1;padding:6px}
-    .chevron{position:absolute;left:50%;transform:translateX(-50%);opacity:0.85;z-index:2;}
-    .chevron.up{top:12px;animation:rise 1s ease-out forwards}
-    .chevron.down{bottom:12px;animation:drop 1s ease-out forwards}
+    .label{background:#4b2f1a;color:#fff;font-weight:700;font-size:15px;padding:4px 0}
+    .value{font-size:32px;font-weight:900;position:relative;z-index:1;padding:6px 0}
+    .fx{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none;z-index:3}
+    .chevron{position:absolute;left:50%;width:42px;opacity:0.85;z-index:2;transform:translateX(-50%)}
+    .chevron.up{top:20%;animation:rise 1s ease-out forwards}
+    .chevron.down{top:20%;animation:drop 1s ease-out forwards}
 
-    @keyframes rise{0%{transform:translate(-50%,20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-20px);opacity:0}}
-    @keyframes drop{0%{transform:translate(-50%,-20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,20px);opacity:0}}
-
-    .delta{position:absolute;left:50%;top:0;transform:translate(-50%,-120%);font:900 22px/1 'Roboto',sans-serif;-webkit-text-stroke:2px #fff;filter:drop-shadow(0 2px 4px rgba(0,0,0,.25))}
+    .delta{position:absolute;left:50%;top:0;transform:translate(-50%,-60%);font:900 22px/1 'Roboto';-webkit-text-stroke:2px #fff;z-index:4}
     .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
     .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+
+    @keyframes rise{0%{transform:translate(-50%,10px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-35px);opacity:0}}
+    @keyframes drop{0%{transform:translate(-50%,-35px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,10px);opacity:0}}
   </style>
 </head>
 <body>
   <div id="barWrapper">
     <div class="stat" id="s_Speed">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png" alt="Speed"/></div>
+      <div class="label">Speed</div>
       <div class="value" id="val_Speed">0</div>
       <div class="fx" id="fx_Speed"></div>
     </div>
     <div class="stat" id="s_Stamina">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png" alt="Stamina"/></div>
+      <div class="label">Stamina</div>
       <div class="value" id="val_Stamina">0</div>
       <div class="fx" id="fx_Stamina"></div>
     </div>
     <div class="stat" id="s_Power">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png" alt="Power"/></div>
+      <div class="label">Power</div>
       <div class="value" id="val_Power">0</div>
       <div class="fx" id="fx_Power"></div>
     </div>
     <div class="stat" id="s_Guts">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png" alt="Guts"/></div>
+      <div class="label">Guts</div>
       <div class="value" id="val_Guts">0</div>
       <div class="fx" id="fx_Guts"></div>
     </div>
     <div class="stat" id="s_Wit">
-      <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png" alt="Wit"/></div>
+      <div class="label">Wit</div>
       <div class="value" id="val_Wit">0</div>
       <div class="fx" id="fx_Wit"></div>
     </div>
   </div>
 
   <script>
-    const chevronUp = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
-    const chevronDown = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
+    const CHEV_UP = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
+    const CHEV_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
 
-    function tweenNumber(stat, target, theme, dur=700){
-      const el=document.getElementById('val_'+stat);
-      if(!el) return;
-      const start=parseInt(el.textContent)||0;
-      const diff=target-start;
-      if(!diff){el.textContent=target;return;}
-      const t0=performance.now();
-      function tick(t){
-        const p=Math.min(1,(t-t0)/dur);
-        const e=1-Math.pow(1-p,3);
-        const cur=Math.round(start+diff*e);
-        el.textContent=cur;
-        if(p<1)requestAnimationFrame(tick);else el.textContent=target;
-      }
-      requestAnimationFrame(tick);
-    }
-
-    function updateStat(stat,newValue,theme){
+    function updateStat(stat, newValue, theme){
       const el=document.getElementById('val_'+stat);
       if(!el)return;
       const old=parseInt(el.textContent)||0;
-      const delta=newValue-old;
-      tweenNumber(stat,newValue,theme);
+      el.textContent=newValue;
 
       const fx=document.getElementById('fx_'+stat);
-      const chev=document.createElement('img');
-      chev.src=(theme==='down'?chevronDown:chevronUp);
+      const chev=new Image();
+      chev.src=(theme==='down'?CHEV_DOWN:CHEV_UP);
       chev.className='chevron '+(theme==='down'?'down':'up');
-      chev.style.height='32px';
       fx.appendChild(chev);
 
-      if(delta!==0){
-        const d=document.createElement('div');
-        d.className='delta '+(delta<0?'down':'up');
-        d.textContent=(delta>0?'+':'')+delta;
-        fx.appendChild(d);
-        setTimeout(()=>d.remove(),1000);
-      }
-      setTimeout(()=>chev.remove(),1000);
+      const delta=document.createElement('div');
+      delta.className='delta '+(theme==='down'?'down':'up');
+      const diff=newValue-old;
+      delta.textContent=(diff>0?'+':'')+diff;
+      fx.appendChild(delta);
+
+      setTimeout(()=>{chev.remove();delta.remove();},1000);
     }
 
-    // demo
+    // Demo
     window.addEventListener('load',()=>{
       setTimeout(()=>updateStat('Speed',120,'up'),1000);
-      setTimeout(()=>updateStat('Stamina',87,'up'),1600);
-      setTimeout(()=>updateStat('Power',20,'up'),2200);
-      setTimeout(()=>updateStat('Guts',-40,'down'),2800);
-      setTimeout(()=>updateStat('Wit',-30,'down'),3400);
+      setTimeout(()=>updateStat('Stamina',87,'up'),1500);
+      setTimeout(()=>updateStat('Power',20,'up'),2000);
+      setTimeout(()=>updateStat('Guts',-40,'down'),2500);
+      setTimeout(()=>updateStat('Wit',-30,'down'),3000);
     });
   </script>
 </body>
