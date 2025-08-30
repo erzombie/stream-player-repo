@@ -18,7 +18,7 @@
     .popup{position:absolute;filter:drop-shadow(var(--shadow))}
 
     .tile{position:relative;width:var(--tileW);height:var(--tileH)}
-    .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
+    .tile img.bg{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
 
     /* number styles */
     .num{
@@ -121,7 +121,7 @@
     const tile=document.createElement('div'); tile.className='tile';
 
     const bgSrc = isDown ? DEFAULT_BG_DOWN : DEFAULT_BG_UP;
-    const img=document.createElement('img'); img.src=bgSrc; img.style.opacity = 0.6; tile.appendChild(img);
+    const img=document.createElement('img'); img.className = 'bg'; img.src=bgSrc; img.style.opacity = 0.6; tile.appendChild(img);
 
     // Sparkle burst (above chevron but below text)
     const sp=document.createElement('div'); sp.className='sparkle';
