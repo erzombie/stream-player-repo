@@ -27,11 +27,13 @@ let bgSrc;
       --bgOpacity:0.68;            /* default bg image opacity */
       --upDist:150px;              /* travel distance for theme=up */
       --downDist:150px;            /* travel distance for theme=down */
+      --scale:0.7;                 /* global scale for the tile (70%) */
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
 
     .popup{position:absolute;filter:drop-shadow(var(--shadow))}
+    .node{transform:scale(var(--scale)); transform-origin:center center;}
 
     .tile{position:relative;width:var(--tileW);height:var(--tileH)}
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%);opacity:var(--bgOpacity)}
@@ -74,18 +76,21 @@ let bgSrc;
     dur:parseInt(qs.get('dur')||'1600',10),
     sound:qs.get('sound')||DEFAULT_SFX_UP,
     soundDown:qs.get('soundDown')||qs.get('soundNeg')||DEFAULT_SFX_DOWN,
-    minDelay:parseInt(qs.get('minDelay')||'60',10),
-    maxDelay:parseInt(qs.get('maxDelay')||'180',10),
+    minDelay:parseInt(qs.get('minDelay')||'20',10),
+    maxDelay:parseInt(qs.get('maxDelay')||'80',10),
     bgImage:qs.get('bgImage')||'',
     bgImageNeg:qs.get('bgImageNeg')||'',
     theme:(qs.get('theme')||'up').toLowerCase(), // 'up' | 'down'
     tileW:parseInt(qs.get('tileW')||'260',10),
     tileH:parseInt(qs.get('tileH')||'180',10),
-    bgOpacity:parseFloat(qs.get('bgOpacity')||'0.68')
+    bgOpacity:parseFloat(qs.get('bgOpacity')||'0.68'),
+    scale:parseFloat(qs.get('scale')||'0.7'),
+    volume:Math.max(0, Math.min(1, parseFloat(qs.get('vol')||qs.get('volume')||'1')))
   };
   document.documentElement.style.setProperty('--tileW', cfg.tileW+'px');
   document.documentElement.style.setProperty('--tileH', cfg.tileH+'px');
   document.documentElement.style.setProperty('--bgOpacity', String(Math.max(0, Math.min(1, cfg.bgOpacity))));
+  document.documentElement.style.setProperty('--scale', String(cfg.scale));
 
   switch(cfg.mode){
     case'v1_wit5':cfg.stat='Wit';cfg.amount=1;cfg.count=5;cfg.concurrent=2;break;
@@ -121,13 +126,9 @@ let bgSrc;
     const tile=document.createElement('div');
     tile.className='tile';
 
-    // Choose background depending on theme (with overrides)
-    let bgSrc;
-    if (cfg.theme==='down') {
-      bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
-    } else {
-      bgSrc = cfg.bgImage || DEFAULT_BG_UP;
-    }
+    // Choose background depending on theme (cleaned)
+    let bgSrc = (cfg.theme==='down') ? (cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN)
+                                     : (cfg.bgImage || DEFAULT_BG_UP);
     const img=document.createElement('img');
     img.src=bgSrc;
     tile.appendChild(img);
