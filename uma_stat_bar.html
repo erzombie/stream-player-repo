@@ -7,14 +7,22 @@
   <style>
     body{margin:0;background:transparent;font-family:'Roboto',system-ui,sans-serif;color:#4a2c0a}
     #barWrapper{display:flex;justify-content:center;align-items:flex-start;gap:0;box-shadow:0 6px 18px rgba(0,0,0,.25);border-radius:10px;overflow:hidden;width:max-content;margin:20px auto}
-    .statBox{background:#fdf6eb;flex:1;min-width:150px;padding:4px 10px;text-align:center;position:relative;border-right:1px solid #d8cbb6;display:flex;flex-direction:column;align-items:center}
+    .statBox{background:#fdf6eb;flex:1;min-width:150px;padding:8px 12px;text-align:center;position:relative;border-right:1px solid #d8cbb6}
     .statBox:last-child{border-right:none}
-    .statLabel{background:#4b2f1a;width:100%;padding:4px 0;margin-bottom:6px;display:flex;justify-content:center;align-items:center;border-radius:4px}
-    .statLabel img{height:22px;object-fit:contain}
-    .statValue{font-size:36px;font-weight:900;position:relative;z-index:1;}
+    .statLabel{display:block;margin-bottom:4px;height:42px} /* increased 1.5x */
+    .statLabel img{height:100%;object-fit:contain}
+    .statValue{font-size:40px;font-weight:900;position:relative;z-index:1;}
+    .statValue.pop{animation:valPop .45s ease-out}
+    @keyframes valPop{0%{transform:scale(.92)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+
     .chevron{position:absolute;left:50%;transform:translateX(-50%);opacity:0.85;z-index:2;}
-    .chevron.up{top:20px;animation:rise 1s ease-out forwards}
-    .chevron.down{bottom:20px;animation:drop 1s ease-out forwards}
+    .chevron.up{top:10px;animation:rise 1s ease-out forwards}
+    .chevron.down{bottom:10px;animation:drop 1s ease-out forwards}
+    .chevron img{height:42px;} /* bigger chevron */
+
+    .delta{position:absolute;left:50%;top:20%;transform:translate(-50%,-50%);font:900 28px/1 'Roboto',system-ui,sans-serif;-webkit-text-stroke:3px #fff;opacity:.98;z-index:3}
+    .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:rise 1s cubic-bezier(.2,.9,.2,1) forwards}
+    .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:drop 1s cubic-bezier(.2,.9,.2,1) forwards}
 
     @keyframes rise{0%{transform:translate(-50%,20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,-20px);opacity:0}}
     @keyframes drop{0%{transform:translate(-50%,-20px);opacity:0}30%{opacity:1}100%{transform:translate(-50%,20px);opacity:0}}
@@ -23,23 +31,23 @@
 <body>
   <div id="barWrapper">
     <div class="statBox" id="box-Speed">
-      <span class="statLabel"><img id="img-Speed" alt="Speed"></span>
+      <span class="statLabel"><img src="bar_speed.png" alt="Speed"></span>
       <div class="statValue" id="val-Speed">0</div>
     </div>
     <div class="statBox" id="box-Stamina">
-      <span class="statLabel"><img id="img-Stamina" alt="Stamina"></span>
+      <span class="statLabel"><img src="bar_stamina.png" alt="Stamina"></span>
       <div class="statValue" id="val-Stamina">0</div>
     </div>
     <div class="statBox" id="box-Power">
-      <span class="statLabel"><img id="img-Power" alt="Power"></span>
+      <span class="statLabel"><img src="bar_power.png" alt="Power"></span>
       <div class="statValue" id="val-Power">0</div>
     </div>
     <div class="statBox" id="box-Guts">
-      <span class="statLabel"><img id="img-Guts" alt="Guts"></span>
+      <span class="statLabel"><img src="bar_guts.png" alt="Guts"></span>
       <div class="statValue" id="val-Guts">0</div>
     </div>
     <div class="statBox" id="box-Wit">
-      <span class="statLabel"><img id="img-Wit" alt="Wit"></span>
+      <span class="statLabel"><img src="bar_wit.png" alt="Wit"></span>
       <div class="statValue" id="val-Wit">0</div>
     </div>
   </div>
@@ -48,32 +56,46 @@
     const chevronUp = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
     const chevronDown = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
 
-    // label PNGs (absolute URLs) + preload + setter
-    const LABELS = {
-      Speed:   'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png',
-      Stamina: 'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png',
-      Power:   'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png',
-      Guts:    'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png',
-      Wit:     'https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png'
-    };
-    function preload(urls){return Promise.allSettled(urls.map(u=>new Promise(r=>{try{const i=new Image();i.onload=i.onerror=()=>r();i.src=u;if(i.decode)i.decode().then(r).catch(r);}catch{r()}})));}
-    function setLabels(){for(const k of Object.keys(LABELS)){const el=document.getElementById('img-'+k); if(el) el.src=LABELS[k];}}
+    function tweenNumber(stat, target, dur=700){
+      const el=document.getElementById('val-'+stat); if(!el) return;
+      const start=parseInt(el.textContent||'0',10); const diff=target-start; if(!diff){return;}
+      const t0=performance.now();
+      function step(t){
+        const p=Math.min(1,(t-t0)/dur);
+        const e=1-Math.pow(1-p,3); // easeOutCubic
+        el.textContent = Math.round(start + diff*e);
+        if(p<1) requestAnimationFrame(step); else { el.textContent=target; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+      }
+      requestAnimationFrame(step);
+    }
 
     function updateStat(stat, newValue, theme){
       const el=document.getElementById('val-'+stat);
       if(!el)return;
       const old=parseInt(el.textContent)||0;
-      el.textContent=newValue;
-      const chev=document.createElement('img');
-      chev.src=(theme==='down'?chevronDown:chevronUp);
-      chev.className='chevron '+(theme==='down'?'down':'up');
-      chev.style.height='28px';
-      document.getElementById('box-'+stat).appendChild(chev);
-      setTimeout(()=>chev.remove(),1000);
+
+      // tween number
+      tweenNumber(stat, newValue, 700);
+
+      // Chevron wrapper
+      const chevWrap=document.createElement('div');
+      chevWrap.className='chevron '+(theme==='down'?'down':'up');
+      const chevImg=document.createElement('img');
+      chevImg.src=(theme==='down'?chevronDown:chevronUp);
+      chevWrap.appendChild(chevImg);
+      document.getElementById('box-'+stat).appendChild(chevWrap);
+
+      // Delta overlay
+      const delta=document.createElement('div');
+      delta.className='delta '+(theme==='down'?'down':'up');
+      const diff=newValue-old; delta.textContent=(diff>0?'+':'')+diff;
+      document.getElementById('box-'+stat).appendChild(delta);
+
+      setTimeout(()=>{chevWrap.remove();delta.remove();},1000);
     }
 
     // demo
-    window.addEventListener('load', async()=>{ await preload(Object.values(LABELS)); setLabels();
+    window.addEventListener('load',()=>{
       setTimeout(()=>updateStat('Speed',120,'up'),1000);
       setTimeout(()=>updateStat('Stamina',90,'up'),1500);
       setTimeout(()=>updateStat('Power',60,'up'),2000);
