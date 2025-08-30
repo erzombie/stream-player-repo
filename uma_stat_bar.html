@@ -8,6 +8,7 @@
     --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
     --numColor:#4a2d00;
     --numShadow:0 1px 2px rgba(0,0,0,.25);
+    --chevOpacity:.60;
   }
   html,body{margin:0;background:transparent;height:100%}
   #bar{display:flex;gap:4px;align-items:flex-start;justify-content:center;
@@ -18,9 +19,10 @@
   .val{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
        font:900 32px/1 var(--font);color:var(--numColor);text-shadow:var(--numShadow)}
 
-  /* chevron anim same as before */
+  /* Chevron (in front of number) */
   .chev{position:absolute;left:50%;top:40%;width:60px;
-        transform:translate(-50%,-50%);opacity:.6;pointer-events:none}
+        transform:translate(-50%,-50%);opacity:var(--chevOpacity);pointer-events:none;
+        filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))}
   @keyframes rise {0%{transform:translate(-50%,-20%) scale(.9);opacity:0}
                    20%{opacity:1}
                    80%{transform:translate(-50%,-160%) scale(1.05);opacity:1}
@@ -32,10 +34,26 @@
   .animUp{animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards}
   .animDown{animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
 
+  /* Number pop */
   .pop{animation:pop 400ms ease-out}
   @keyframes pop{0%{transform:translateX(-50%) scale(.9)}
                  60%{transform:translateX(-50%) scale(1.1)}
                  100%{transform:translateX(-50%) scale(1)}}
+
+  /* Delta bubble (+N / -N) */
+  .delta{position:absolute;left:50%;top:10%;transform:translate(-50%,-50%);
+         font:900 24px/1 var(--font);-webkit-text-stroke:3px #fff;opacity:0.95;
+         pointer-events:none;filter:drop-shadow(0 8px 16px rgba(0,0,0,.3))}
+  .delta.up{
+    background:linear-gradient(to top,#ff8a00,#ffd080);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards;
+  }
+  .delta.down{
+    background:linear-gradient(to top,#3a8dff,#a0cfff);
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards;
+  }
 </style>
 </head>
 <body>
@@ -50,6 +68,7 @@
 <script>
 const qs=new URLSearchParams(location.search);
 
+/* Bar art (you said you’ll provide these) */
 const BARS={
   Speed:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png",
   Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png",
@@ -60,39 +79,64 @@ const BARS={
 const CHEV_UP="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png";
 const CHEV_DOWN="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png";
 
+/* Preload */
+const preload=(urls)=>Promise.allSettled(urls.map(u=>new Promise(r=>{
+  try{const im=new Image(); im.onload=im.onerror=()=>r(); im.src=u; if(im.decode)im.decode().then(r).catch(r);}
+  catch{r()}
+})));
+
+/* Totals from query */
 const totals={
-  Speed:parseInt(qs.get('speed')||'0',10),
-  Stamina:parseInt(qs.get('stamina')||'0',10),
-  Power:parseInt(qs.get('power')||'0',10),
-  Guts:parseInt(qs.get('guts')||'0',10),
-  Wit:parseInt(qs.get('wit')||'0',10),
+  Speed:+(qs.get('speed')||0),
+  Stamina:+(qs.get('stamina')||0),
+  Power:+(qs.get('power')||0),
+  Guts:+(qs.get('guts')||0),
+  Wit:+(qs.get('wit')||0),
 };
-const animStat=(qs.get('anim')||'').toLowerCase();
-const theme=(qs.get('theme')||'up').toLowerCase();
+const animStat=(qs.get('anim')||'').toLowerCase();   // e.g., "wit"
+const theme=(qs.get('theme')||'up').toLowerCase();   // "up" | "down"
+const delta=parseInt(qs.get('delta')||'0',10);       // e.g., +7 or -7
 
 function setSlot(name){
   const slot=document.getElementById(name);
   slot.style.backgroundImage=`url(${BARS[name]})`;
   document.getElementById('val'+name).textContent=totals[name];
 }
-Object.keys(BARS).forEach(setSlot);
+['Speed','Stamina','Power','Guts','Wit'].forEach(setSlot);
 
-function animateSlot(statName, theme){
+function animateSlot(statName, theme, delta){
   const slot=document.getElementById(statName);
   if(!slot) return;
+
+  // Chevron
   const chev=document.createElement('img');
   chev.className='chev '+(theme==='down'?'animDown':'animUp');
   chev.src= theme==='down'?CHEV_DOWN:CHEV_UP;
   slot.appendChild(chev);
+
+  // Delta +N / -N
+  if(delta && !Number.isNaN(delta)){
+    const d=document.createElement('div');
+    d.className='delta '+(delta<0?'down':'up');
+    d.textContent = (delta>0?'+':'') + delta;
+    slot.appendChild(d);
+    setTimeout(()=>d.remove(), 950);
+  }
+
+  // Pop number
   const val=document.getElementById('val'+statName);
   val.classList.remove('pop'); void val.offsetWidth; val.classList.add('pop');
-  setTimeout(()=>chev.remove(),1000);
+
+  setTimeout(()=>chev.remove(), 950);
 }
 
-if(animStat){
-  const key=animStat.charAt(0).toUpperCase()+animStat.slice(1);
-  animateSlot(key,theme);
-}
+(async()=>{
+  await preload([...Object.values(BARS), CHEV_UP, CHEV_DOWN]);
+  if(animStat){
+    const key=animStat.charAt(0).toUpperCase()+animStat.slice(1);
+    animateSlot(key, theme, delta);
+  }
+})();
 </script>
 </body>
 </html>
