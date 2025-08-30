@@ -73,7 +73,13 @@
     tileW:parseInt(qs.get('tileW')||'260',10),
     tileH:parseInt(qs.get('tileH')||'180',10),
     lowPerf:qs.get('lowPerf')==='1'
-  };
+  }
+  const list = (q) => (qs.get(q)||'').split('|').filter(Boolean);
+  const forcedStats   = list('stats');    // e.g. "Speed|Guts|Wit"
+  const forcedAmounts = list('amounts')   // e.g. "5|1|12"  (length = count)
+                        .map(v => parseInt(v,10))
+                        .filter(n => !Number.isNaN(n));
+    
   document.documentElement.style.setProperty('--tileW', cfg.tileW+'px');
   document.documentElement.style.setProperty('--tileH', cfg.tileH+'px');
   if(cfg.lowPerf)document.body.classList.add('low');
@@ -115,8 +121,13 @@
   }
 
   async function batchSpawn(){
-    const total=cfg.count;const jobs=[];
-    for(let i=0;i<total;i++)jobs.push({stat:choice(cfg.statPool),amount:rand(1,15),delay:rand(cfg.minDelay,cfg.maxDelay)});
+  const total = cfg.count;
+  const jobs = [];
+  for (let i = 0; i < total; i++) {
+  const stat   = forcedStats[i]   || choice(cfg.statPool);
+  const amount = (forcedAmounts[i] != null) ? forcedAmounts[i] : rand(1,15);
+  jobs.push({ stat, amount, delay: rand(cfg.minDelay, cfg.maxDelay) });
+}
     let inFlight=0,idx=0;
     return new Promise(res=>{function go(){while(inFlight<cfg.concurrent&&idx<jobs.length){const j=jobs[idx++];inFlight++;setTimeout(()=>{spawnOne({stat:j.stat,amount:j.amount,dur:(cfg.theme==='down'?cfg.durDown:cfg.durUp)});setTimeout(()=>{inFlight--;go();if(idx===jobs.length&&inFlight===0)res()},(cfg.theme==='down'?cfg.durDown:cfg.durUp)+50)},j.delay)}}go()});
   }
