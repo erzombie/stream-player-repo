@@ -115,7 +115,7 @@
     const tile=document.createElement('div'); tile.className='tile';
 
     const bgSrc = isDown ? DEFAULT_BG_DOWN : DEFAULT_BG_UP;
-    const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
+    const img=document.createElement('img'); img.src=bgSrc; img.style.opacity = 0.6; tile.appendChild(img);
 
     const num=document.createElement('div'); num.className='num ' + (isDown? 'down':'up');
     const prefix = (isDown && String(amount)[0]!== '-') ? '-' : '+';
