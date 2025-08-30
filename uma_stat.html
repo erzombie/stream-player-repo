@@ -123,6 +123,14 @@
     const bgSrc = isDown ? DEFAULT_BG_DOWN : DEFAULT_BG_UP;
     const img=document.createElement('img'); img.src=bgSrc; img.style.opacity = 0.6; tile.appendChild(img);
 
+    // Sparkle burst (above chevron but below text)
+    const sp=document.createElement('div'); sp.className='sparkle';
+    sp.style.setProperty('--rot', (Math.random()*40-20)+'deg');
+    sp.style.setProperty('--sparkColor', (isDown? 'rgba(100,170,255,.55)' : 'rgba(255,168,64,.55)'));
+    sp.style.animation = `sparkleBurst ${cfg.sparkMs||420}ms ease-out forwards`;
+    sp.style.transform += ` scale(${(cfg.sparkScale||1)})`;
+    tile.appendChild(sp);
+
     const num=document.createElement('div'); num.className='num ' + (isDown? 'down':'up');
     const prefix = (isDown && String(amount)[0]!== '-') ? '-' : '+';
     num.textContent=`${prefix}${Math.abs(amount)}`; tile.appendChild(num);
