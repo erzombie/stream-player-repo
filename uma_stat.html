@@ -138,7 +138,6 @@ let bgSrc;
     if(sfxToPlay){ try{ if(sfxEl.src!==sfxToPlay) sfxEl.src=sfxToPlay; sfxEl.currentTime=0; sfxEl.play().catch(()=>{});}catch(e){} }
 
     setTimeout(()=>wrap.remove(),dur+120);
-  }
 
   async function batchSpawn(){
     const total=cfg.count;const fixed=cfg.amount??null;const jobs=[];
