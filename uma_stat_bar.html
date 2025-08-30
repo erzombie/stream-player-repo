@@ -1,183 +1,158 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8"/>
-<title>Uma Stats Bar Overlay</title>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<style>
-  :root{
-    --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
-    --numColor:#4a2d00;
-    --numShadow:0 1px 2px rgba(0,0,0,.25);
-    --header:#4b2f1a;     /* dark brown header */
-    --body:#fff2df;       /* cream white body */
-    --chevOpacity:.60;
-    --slotW: 210px;       /* width of each stat slot */
-    --slotH: 86px;        /* height of body panel */
-  }
-  html,body{margin:0;background:transparent;height:100%}
-  #wrap{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-        height:100vh;pointer-events:none;gap:6px;padding:6px}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Uma Stat Bar Overlay</title>
+  <style>
+    :root{
+      --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+      --header:#4b2f1a;         /* not used in this minimal bar but kept for themeing */
+      --body:#fff4e0;
+      --divider:#d0bfa8;
+      --num:#5a381e;
+      --panelShadow:0 10px 28px rgba(0,0,0,.35);
+      --chevOpacity:.65;       /* chevron opacity */
+    }
 
-  /* Header row (labels) */
-  #hdr{display:flex;gap:6px; padding:8px 10px; border-radius:10px;
-       background:var(--header); filter:drop-shadow(0 6px 22px rgba(0,0,0,.35))}
-  .hdrSlot{width:var(--slotW); height:38px; display:flex;align-items:center;justify-content:center}
-  .hdrSlot img{max-height:32px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.25))}
+    html,body{margin:0;background:transparent;height:100%}
+    body{display:flex;justify-content:center;align-items:center;font-family:var(--font)}
 
-  /* Body row (numbers) */
-  #body{display:flex;gap:6px}
-  .slot{
-    position:relative; width:var(--slotW); height:var(--slotH);
-    background:var(--body);
-    border-radius:10px;
-    box-shadow:0 8px 24px rgba(0,0,0,.25) inset, 0 6px 18px rgba(0,0,0,.25);
-  }
-  .val{
-    position:absolute; left:50%; bottom:10px; transform:translateX(-50%);
-    font:900 38px/1 var(--font); color:var(--numColor); text-shadow:var(--numShadow);
-  }
+    .bar-container{display:flex;background:var(--body);border-radius:8px;box-shadow:var(--panelShadow);overflow:hidden}
 
-  /* Chevron (in front of number) */
-  .chev{
-    position:absolute; left:50%; top:40%; width:64px;
-    transform:translate(-50%,-50%); opacity:var(--chevOpacity); pointer-events:none;
-    filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))
-  }
-  @keyframes rise {0%{transform:translate(-50%,-20%) scale(.9);opacity:0}
-                   20%{opacity:1}
-                   80%{transform:translate(-50%,-160%) scale(1.05);opacity:1}
-                   100%{transform:translate(-50%,-200%) scale(1);opacity:0}}
-  @keyframes drop {0%{transform:translate(-50%,-80%) scale(.9);opacity:0}
-                   20%{opacity:1}
-                   80%{transform:translate(-50%,40%) scale(1.05);opacity:1}
-                   100%{transform:translate(-50%,80%) scale(1);opacity:0}}
-  .animUp{animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards}
-  .animDown{animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
+    .stat{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:6px 12px;border-right:2px solid var(--divider);min-width:140px}
+    .stat:last-child{border-right:none}
 
-  /* Number pop */
-  .pop{animation:pop 420ms ease-out}
-  @keyframes pop{0%{transform:translateX(-50%) scale(.9)}
-                 60%{transform:translateX(-50%) scale(1.1)}
-                 100%{transform:translateX(-50%) scale(1)}}
+    .stat img.label{width:92px;height:auto;object-fit:contain;margin-bottom:2px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.2))}
 
-  /* Delta bubble (+N / -N) */
-  .delta{
-    position:absolute; left:50%; top:6%; transform:translate(-50%,-50%);
-    font:900 24px/1 var(--font); -webkit-text-stroke:3px #fff; opacity:.98;
-    pointer-events:none; filter:drop-shadow(0 8px 16px rgba(0,0,0,.30))
-  }
-  .delta.up{
-    background:linear-gradient(to top,#ff8a00,#ffd080);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards;
-  }
-  .delta.down{
-    background:linear-gradient(to top,#3a8dff,#a0cfff);
-    -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards;
-  }
-</style>
+    /* Number */
+    .value{position:relative;font-weight:900;color:var(--num);text-align:center;line-height:1;font-size:36px;min-width:74px}
+    .value.pop{animation:valPop .42s ease-out}
+    @keyframes valPop{0%{transform:scale(.92)}60%{transform:scale(1.08)}100%{transform:scale(1)}}
+
+    /* FX layer sits ABOVE the number */
+    .fx{position:absolute;left:0;right:0;top:0;bottom:0;pointer-events:none}
+    .fx img.chev{position:absolute;left:50%;top:50%;width:64px;opacity:var(--chevOpacity);transform:translate(-50%,-50%);filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))}
+
+    @keyframes rise{0%{transform:translate(-50%,-10%) scale(.9);opacity:0}20%{opacity:1}80%{transform:translate(-50%,-115%) scale(1.05);opacity:1}100%{transform:translate(-50%,-150%) scale(1);opacity:0}}
+    @keyframes drop{0%{transform:translate(-50%,-90%) scale(.9);opacity:0}20%{opacity:1}80%{transform:translate(-50%,35%) scale(1.05);opacity:1}100%{transform:translate(-50%,70%) scale(1);opacity:0}}
+    .animUp{animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards}
+    .animDown{animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
+
+    /* Delta bubble (+N / -N) */
+    .delta{position:absolute;left:50%;top:20%;transform:translate(-50%,-50%);font:900 24px/1 var(--font);-webkit-text-stroke:3px #fff;opacity:.98;filter:drop-shadow(0 8px 16px rgba(0,0,0,.30))}
+    .delta.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:rise 900ms cubic-bezier(.2,.9,.2,1) forwards}
+    .delta.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
+  </style>
 </head>
 <body>
-<div id="wrap">
-  <!-- header labels -->
-  <div id="hdr">
-    <div class="hdrSlot"><img id="lblSpeed"   alt="Speed"></div>
-    <div class="hdrSlot"><img id="lblStamina" alt="Stamina"></div>
-    <div class="hdrSlot"><img id="lblPower"   alt="Power"></div>
-    <div class="hdrSlot"><img id="lblGuts"    alt="Guts"></div>
-    <div class="hdrSlot"><img id="lblWit"     alt="Wit"></div>
+  <div class="bar-container">
+    <!-- Each .stat has a foreground FX layer to render on TOP of the number -->
+    <div class="stat" id="s_Speed">
+      <img class="label" src="bar_speed.png" alt="Speed"/>
+      <div class="value" id="val_Speed">0</div>
+      <div class="fx" id="fx_Speed"></div>
+    </div>
+    <div class="stat" id="s_Stamina">
+      <img class="label" src="bar_stamina.png" alt="Stamina"/>
+      <div class="value" id="val_Stamina">0</div>
+      <div class="fx" id="fx_Stamina"></div>
+    </div>
+    <div class="stat" id="s_Power">
+      <img class="label" src="bar_power.png" alt="Power"/>
+      <div class="value" id="val_Power">0</div>
+      <div class="fx" id="fx_Power"></div>
+    </div>
+    <div class="stat" id="s_Guts">
+      <img class="label" src="bar_guts.png" alt="Guts"/>
+      <div class="value" id="val_Guts">0</div>
+      <div class="fx" id="fx_Guts"></div>
+    </div>
+    <div class="stat" id="s_Wit">
+      <img class="label" src="bar_wit.png" alt="Wit"/>
+      <div class="value" id="val_Wit">0</div>
+      <div class="fx" id="fx_Wit"></div>
+    </div>
   </div>
 
-  <!-- body numbers -->
-  <div id="body">
-    <div class="slot" id="Speed"><span class="val" id="valSpeed">0</span></div>
-    <div class="slot" id="Stamina"><span class="val" id="valStamina">0</span></div>
-    <div class="slot" id="Power"><span class="val" id="valPower">0</span></div>
-    <div class="slot" id="Guts"><span class="val" id="valGuts">0</span></div>
-    <div class="slot" id="Wit"><span class="val" id="valWit">0</span></div>
-  </div>
-</div>
+  <script>
+    // ---- Config / assets ----
+    const CHEV_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
+    const CHEV_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
 
-<script>
-const qs=new URLSearchParams(location.search);
+    // Parse query params so Streamer.bot can drive this overlay directly
+    const qs = new URLSearchParams(location.search);
+    const totals = {
+      Speed:   parseInt(qs.get('speed')   || '0', 10),
+      Stamina: parseInt(qs.get('stamina') || '0', 10),
+      Power:   parseInt(qs.get('power')   || '0', 10),
+      Guts:    parseInt(qs.get('guts')    || '0', 10),
+      Wit:     parseInt(qs.get('wit')     || '0', 10)
+    };
+    const anim   = (qs.get('anim')   || '').trim();   // e.g. 'Wit'
+    const theme  = (qs.get('theme')  || 'up').toLowerCase();
+    const deltaQ = parseInt(qs.get('delta') || '0', 10); // e.g. +7 / -7
 
-/* Allow quick color overrides via URL */
-const headerColor = qs.get('headerColor');
-const bodyColor   = qs.get('bodyColor');
-if(headerColor) document.documentElement.style.setProperty('--header', headerColor);
-if(bodyColor)   document.documentElement.style.setProperty('--body',   bodyColor);
+    // Write initial totals
+    for (const k of Object.keys(totals)) updateValue(k, totals[k], false);
 
-/* Label art (use your uploaded bar label images) */
-const LABELS={
-  Speed:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png",
-  Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png",
-  Power:  "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png",
-  Guts:   "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png",
-  Wit:    "https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png"
-};
-/* Chevron assets (reusing your PNGs) */
-const CHEV_UP   ="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png";
-const CHEV_DOWN ="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png";
+    // If an anim target is provided, play chevron + delta and tween the number
+    if (anim) animateChange(anim, totals[anim], deltaQ, theme);
 
-/* Preload helper */
-const preload=(urls)=>Promise.allSettled(urls.map(u=>new Promise(r=>{
-  try{const im=new Image(); im.onload=im.onerror=()=>r(); im.src=u; if(im.decode)im.decode().then(r).catch(r);}
-  catch{r()}
-})));
+    // ---- helpers ----
+    function setText(id, txt){ const el = document.getElementById(id); if (el) el.textContent = txt; }
 
-/* Totals from query */
-const totals={
-  Speed:+(qs.get('speed')||0),
-  Stamina:+(qs.get('stamina')||0),
-  Power:+(qs.get('power')||0),
-  Guts:+(qs.get('guts')||0),
-  Wit:+(qs.get('wit')||0),
-};
-const animStat=(qs.get('anim')||'').toLowerCase();   // e.g., "wit"
-const theme=(qs.get('theme')||'up').toLowerCase();   // "up" | "down"
-const delta=parseInt(qs.get('delta')||'0',10);
+    function updateValue(stat, newVal, pop=true){
+      const el = document.getElementById('val_'+stat);
+      if (!el) return;
+      el.textContent = newVal;
+      if (pop){ el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+    }
 
-/* Fill header labels & numbers */
-function setSlot(name){
-  const lbl=document.getElementById('lbl'+name);
-  lbl.src = LABELS[name];
-  document.getElementById('val'+name).textContent = totals[name];
-}
-['Speed','Stamina','Power','Guts','Wit'].forEach(setSlot);
+    // Smooth counting from current displayed value to target
+    function tweenNumber(stat, target, dur=600){
+      const el = document.getElementById('val_'+stat);
+      if (!el) return;
+      const start = parseInt(el.textContent || '0', 10);
+      const diff = target - start;
+      if (!diff){ updateValue(stat, target); return; }
+      const t0 = performance.now();
+      function tick(t){
+        const p = Math.min(1, (t - t0)/dur);
+        // easeOutCubic
+        const e = 1 - Math.pow(1 - p, 3);
+        const cur = Math.round(start + diff * e);
+        el.textContent = cur;
+        if (p < 1) requestAnimationFrame(tick); else updateValue(stat, target);
+      }
+      requestAnimationFrame(tick);
+    }
 
-/* Animate a slot with chevron + delta bubble */
-function animateSlot(statName, theme, delta){
-  const slot=document.getElementById(statName);
-  if(!slot) return;
+    function animateChange(stat, targetVal, delta=0, theme='up'){
+      const fx = document.getElementById('fx_'+stat);
+      if (!fx) return;
+      // Chevron on top
+      const chev = new Image();
+      chev.src = (theme === 'down') ? CHEV_DOWN : CHEV_UP;
+      chev.className = 'chev ' + (theme === 'down' ? 'animDown' : 'animUp');
+      fx.appendChild(chev);
 
-  const chev=document.createElement('img');
-  chev.className='chev '+(theme==='down'?'animDown':'animUp');
-  chev.src = (theme==='down'?CHEV_DOWN:CHEV_UP);
-  slot.appendChild(chev);
+      // Delta bubble
+      if (delta){
+        const d = document.createElement('div');
+        d.className = 'delta ' + (delta < 0 ? 'down' : 'up');
+        d.textContent = (delta > 0 ? '+' : '') + delta;
+        fx.appendChild(d);
+        setTimeout(()=> d.remove(), 950);
+      }
 
-  if(delta && !Number.isNaN(delta)){
-    const d=document.createElement('div');
-    d.className='delta '+(delta<0?'down':'up');
-    d.textContent = (delta>0?'+':'') + delta;
-    slot.appendChild(d);
-    setTimeout(()=>d.remove(), 950);
-  }
+      // Number tween behind the FX
+      tweenNumber(stat, targetVal, 650);
+      setTimeout(()=> chev.remove(), 950);
+    }
 
-  const val=document.getElementById('val'+statName);
-  val.classList.remove('pop'); void val.offsetWidth; val.classList.add('pop');
-
-  setTimeout(()=>chev.remove(), 950);
-}
-
-(async()=>{
-  await preload([...Object.values(LABELS), CHEV_UP, CHEV_DOWN]);
-  if(animStat){
-    const key=animStat.charAt(0).toUpperCase()+animStat.slice(1);
-    animateSlot(key, theme, delta);
-  }
-})();
-</script>
+    // Example: manual test without Streamer.bot
+    // setTimeout(()=>{ animateChange('Speed', 1234, +15, 'up'); }, 1200);
+  </script>
 </body>
 </html>
