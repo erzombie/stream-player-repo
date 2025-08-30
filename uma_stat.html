@@ -6,7 +6,6 @@
   <title>Uma Stat Overlay</title>
   <style>
     :root{
-      --textOrange:#ff8a00;
       --white:#ffffff;
       --strokeW:4px;    /* white outline width */
       --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
@@ -27,12 +26,18 @@
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%);opacity:var(--bgOpacity)}
 
     /* number on top, label below (image) */
-    .num{position:absolute;left:0;right:0;top:8px;text-align:center;font:900 64px/1 var(--font);color:var(--textOrange);
-         -webkit-text-stroke:var(--strokeW) var(--white);font-weight:900;opacity:0.9}
+    .num{
+      position:absolute;left:0;right:0;top:8px;
+      text-align:center;font:900 64px/1 var(--font);
+      font-weight:900;opacity:0.9;
+      background:linear-gradient(to top,#ff8a00,#ffd080);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      -webkit-text-stroke:var(--strokeW) var(--white);
+    }
 
     .labelImg{position:absolute;left:50%;transform:translateX(-50%);
-      bottom:-20px;               /* push label lower */
-      height:44px;                /* slightly larger */
+      bottom:-15px;               /* push label lower */
+      height:46px;                /* slightly larger */
       object-fit:contain;pointer-events:none;filter:none;opacity:1}
 
     @keyframes riseFade{0%{transform:translateY(0) scale(.96);opacity:0}8%{opacity:1}70%{transform:translateY(calc(var(--upDist)*-0.6)) scale(1.02);opacity:1}100%{transform:translateY(calc(var(--upDist)*-1)) scale(1);opacity:0}}
@@ -77,8 +82,8 @@
     dur:parseInt(qs.get('dur')||'1600',10),
     sound:qs.get('sound')||DEFAULT_SFX_UP,
     soundDown:qs.get('soundDown')||qs.get('soundNeg')||DEFAULT_SFX_DOWN,
-    minDelay:parseInt(qs.get('minDelay')||'100',10),   // min 0.1s
-    maxDelay:parseInt(qs.get('maxDelay')||'600',10), // up to 0.6s
+    minDelay:parseInt(qs.get('minDelay')||'0',10),   // now 0s
+    maxDelay:parseInt(qs.get('maxDelay')||'400',10), // up to 0.4s
     bgImage:qs.get('bgImage')||'',
     bgImageNeg:qs.get('bgImageNeg')||'',
     theme:(qs.get('theme')||'up').toLowerCase(), // 'up' | 'down'
