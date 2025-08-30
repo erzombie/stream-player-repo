@@ -27,12 +27,12 @@
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%);opacity:var(--bgOpacity)}
 
     /* number on top, label below (image) */
-    .num{position:absolute;left:0;right:0;top:10px;text-align:center;font:900 64px/1 var(--font);color:var(--textOrange);
-         -webkit-text-stroke:var(--strokeW) var(--white)}
+    .num{position:absolute;left:0;right:0;top:8px;text-align:center;font:900 64px/1 var(--font);color:var(--textOrange);
+         -webkit-text-stroke:var(--strokeW) var(--white);font-weight:900;opacity:0.9}
 
     .labelImg{position:absolute;left:50%;transform:translateX(-50%);
-      bottom:-10px;               /* push label lower */
-      height:44px;                /* slightly larger */
+      bottom:-15px;               /* push label lower */
+      height:46px;                /* slightly larger */
       object-fit:contain;pointer-events:none;filter:none;opacity:1}
 
     @keyframes riseFade{0%{transform:translateY(0) scale(.96);opacity:0}8%{opacity:1}70%{transform:translateY(calc(var(--upDist)*-0.6)) scale(1.02);opacity:1}100%{transform:translateY(calc(var(--upDist)*-1)) scale(1);opacity:0}}
@@ -51,6 +51,20 @@
   const DEFAULT_BG_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
   const DEFAULT_SFX_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
   const DEFAULT_SFX_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
+
+  const STAT_LABELS = {
+    Speed: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
+    Stamina: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
+    Power: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
+    Guts: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
+    Wit: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
+  };
+
+  // Preload assets
+  const preloadAssets = [DEFAULT_BG_UP, DEFAULT_BG_DOWN, ...Object.values(STAT_LABELS)];
+  preloadAssets.forEach(src=>{const i=new Image(); i.src=src});
+  const preloadSounds = [DEFAULT_SFX_UP, DEFAULT_SFX_DOWN];
+  preloadSounds.forEach(src=>{const a=new Audio(); a.src=src});
 
   const qs=new URLSearchParams(location.search);
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
@@ -90,15 +104,6 @@
   const stage=document.getElementById('stage');
   const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a; const choice=a=>a[Math.floor(Math.random()*a.length)];
 
-  // PNG labels
-  const STAT_LABELS = {
-    Speed: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
-    Stamina: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
-    Power: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
-    Guts: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
-    Wit: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
-  };
-
   function spawnOne({stat,amount,dur}){
     const wrap=document.createElement('div');
     wrap.className='popup ' + (cfg.theme==='down' ? 'animDown' : 'animUp');
@@ -113,23 +118,19 @@
     const node=document.createElement('div'); node.className='node';
     const tile=document.createElement('div'); tile.className='tile';
 
-    // Background (per theme, with overrides)
     const bgSrc = (cfg.theme==='down') ? (cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN)
                                        : (cfg.bgImage || DEFAULT_BG_UP);
     const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
 
-    // Number
     const num=document.createElement('div'); num.className='num';
     const prefix = (cfg.theme==='down' && String(amount)[0]!== '-') ? '-' : '+';
     num.textContent=`${prefix}${Math.abs(amount)}`; tile.appendChild(num);
 
-    // Label image
     const labelImg=document.createElement('img'); labelImg.className='labelImg';
     labelImg.src = (STAT_LABELS[stat] || ''); tile.appendChild(labelImg);
 
     node.appendChild(tile); wrap.appendChild(node); stage.appendChild(wrap);
 
-    // SFX per instance (overlap allowed)
     const sfxToPlay = (cfg.theme==='down') ? cfg.soundDown : cfg.sound;
     if(sfxToPlay){ try{ const a=new Audio(sfxToPlay); a.volume=cfg.volume; a.play().catch(()=>{});}catch(e){} }
 
@@ -140,7 +141,7 @@
     const total=cfg.count; const fixed=cfg.amount??null; const jobs=[];
     for(let i=0;i<total;i++) jobs.push({
       stat:(cfg.mode==='v4_random')? choice(STAT_POOL) : cfg.stat,
-      amount:(fixed==null&&cfg.mode==='v4_random')? rand(1,20) : (fixed??1),
+      amount:(fixed==null&&cfg.mode==='v4_random')? rand(1,15) : (fixed??1), // now 1-15
       delay:rand(cfg.minDelay,cfg.maxDelay)
     });
 
@@ -159,7 +160,7 @@
     });
   }
 
-  (async()=>{ await batchSpawn() })();
+  window.addEventListener('load',()=>{(async()=>{ await batchSpawn() })();});
   </script>
 </body>
 </html>
