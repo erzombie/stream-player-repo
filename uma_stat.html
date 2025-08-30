@@ -40,10 +40,7 @@ let bgSrc;
     .num{position:absolute;left:0;right:0;top:18px;text-align:center;font:900 64px/1 var(--font);color:var(--textOrange);
          -webkit-text-stroke:var(--strokeW) var(--white)}
 
-    .label{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;display:block;text-align:center;
-           font:900 46px/1 var(--font);color:var(--textOrange);
-           -webkit-text-stroke:var(--strokeW) var(--white)}
-    .icon{display:none}
+    .labelImg{position:absolute;left:50%;transform:translateX(-50%);bottom:12px;height:38px;object-fit:contain;pointer-events:none;filter:none}
     .icon{width:24px;height:24px;display:inline-block}
 
     @keyframes riseFade{0%{transform:translateY(0) scale(.96);opacity:0}8%{opacity:1}70%{transform:translateY(calc(var(--upDist)*-0.6)) scale(1.02);opacity:1}100%{transform:translateY(calc(var(--upDist)*-1)) scale(1);opacity:0}}
@@ -101,9 +98,13 @@ let bgSrc;
   const sfxEl=document.getElementById('sfx');
   const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a; const choice=a=>a[Math.floor(Math.random()*a.length)];
 
-  function statIcon(stat){
-    const c = '#ff9f25';
-    return '';
+  // Hard-coded mapping to PNG labels instead of SVG icons
+  const STAT_LABELS = {
+    Speed: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
+    Stamina: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
+    Power: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
+    Guts: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
+    Wit: "https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
   }
 
   function spawnOne({stat,amount,dur}){
@@ -121,6 +122,7 @@ let bgSrc;
       bgSrc = cfg.bgImage || DEFAULT_BG_UP;
     }
     }
+    }
     if (cfg.theme==='down') bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG;
     const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
 
@@ -128,9 +130,10 @@ let bgSrc;
     const prefix = (cfg.theme==='down' && String(amount)[0]!== '-') ? '-' : '+';
     num.textContent=`${prefix}${Math.abs(amount)}`;
 
-    const label=document.createElement('div');label.className='label';label.textContent = stat;
-
-    tile.appendChild(num);tile.appendChild(label);wrap.appendChild(tile);stage.appendChild(wrap);
+    const labelImg=document.createElement('img');
+    labelImg.className='labelImg';
+    labelImg.src = (typeof STAT_LABELS!== 'undefined' && STAT_LABELS[stat]) ? STAT_LABELS[stat] : '';
+    tile.appendChild(labelImg);wrap.appendChild(tile);stage.appendChild(wrap);
 
     const sfxToPlay = (cfg.theme==='down' && cfg.soundDown) ? cfg.soundDown : cfg.sound;
     if(sfxToPlay){ try{ if(sfxEl.src!==sfxToPlay) sfxEl.src=sfxToPlay; sfxEl.currentTime=0; sfxEl.play().catch(()=>{});}catch(e){} }
