@@ -33,7 +33,7 @@
     .animDown{animation:dropFade var(--dur,1400ms) cubic-bezier(.2,.9,.2,1) forwards}
 
     /* sparkle */
-    .sparkle{position:absolute;left:50%;top:50%;width:120%;height:120%;transform:translate(-50%,-50%) scale(.5) rotate(var(--rot,0deg));opacity:0;pointer-events:none;border-radius:50%;background:radial-gradient(circle at center, rgba(255,255,255,.5) 0 25%, rgba(255,255,255,0) 70%), conic-gradient(from 0deg, var(--sparkColor, rgba(255,168,64,.4)) 0 6deg, transparent 6deg 24deg);mix-blend-mode:screen;filter:blur(1px)}
+    .sparkle{position:absolute;left:50%;top:50%;width:110%;height:110%;transform:translate(-50%,-50%) scale(.45) rotate(var(--rot,0deg));opacity:0;pointer-events:none;border-radius:50%;background:radial-gradient(circle at center, rgba(255,255,255,.35) 0 20%, rgba(255,255,255,0) 65%), conic-gradient(from 0deg, var(--sparkColor, rgba(255,168,64,.25)) 0 4deg, transparent 4deg 26deg);mix-blend-mode:screen;filter:blur(1.5px)}
     @keyframes sparkleBurst{0%{opacity:0;transform:translate(-50%,-50%) scale(.6) rotate(var(--rot,0deg))}25%{opacity:.85}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15) rotate(calc(var(--rot,0deg) + 28deg))}}
 
     body.low .popup{filter:none}
