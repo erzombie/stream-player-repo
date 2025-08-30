@@ -117,34 +117,25 @@ function tweenNumber(el, target, dur=900){
 
 function updateStat(stat, newValue, theme='up'){
   const valEl = document.getElementById('val_'+stat);
-  const fx    = document.getElementById('fx_'+stat);
+  const fx = document.getElementById('fx_'+stat);
   if(!valEl || !fx) return;
 
   const old  = parseInt(valEl.textContent||'0',10);
   const diff = newValue - old;
 
-  // move value with chevron
-  valEl.classList.remove('moveUp','moveDown'); void valEl.offsetWidth;
-  valEl.classList.add(diff<0 || theme==='down' ? 'moveDown' : 'moveUp');
-
-  // tween number
+  // Number tween
+  valEl.classList.remove('moveUp','moveDown');
+  void valEl.offsetWidth;
+  valEl.classList.add(diff<0 ? 'moveDown' : 'moveUp');
   tweenNumber(valEl, newValue, 900);
 
-  // chevron behind the number
+  // Chevron only
   const chev = new Image();
   chev.src = (diff<0 || theme==='down') ? CHEV_DOWN : CHEV_UP;
-  chev.className = (diff<0 || theme==='down') ? 'chev animDown' : 'chev animUp';
+  chev.className = (diff<0 || theme==='down') ? 'animDown' : 'animUp';
   fx.appendChild(chev);
-  setTimeout(()=>chev.remove(), 950);
-
-  // delta on top
-  if(diff !== 0){
-    const d = document.createElement('div');
-    d.className = 'delta ' + (diff<0 || theme==='down' ? 'down' : 'up');
-    d.textContent = (diff>0?'+':'') + diff;
-    fx.appendChild(d);
-    setTimeout(()=> d.remove(), 950);
-  }
+  setTimeout(()=> chev.remove(), 950);
+}
 }
 
 /* Demo (use ?demo=1 to trigger automatically) */
