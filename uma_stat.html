@@ -108,36 +108,54 @@ let bgSrc;
   }
 
   function spawnOne({stat,amount,dur}){
-    const wrap=document.createElement('div');wrap.className='popup ' + (cfg.theme==='down' ? 'animDown' : 'animUp');wrap.style.setProperty('--dur',`${dur}ms`);
-    const margin=140;const x=rand(margin,window.innerWidth-margin-cfg.tileW);const y=rand(margin,window.innerHeight-margin-cfg.tileH);
-    wrap.style.left=x+'px';wrap.style.top=y+'px';
+    const wrap=document.createElement('div');
+    wrap.className='popup ' + (cfg.theme==='down' ? 'animDown' : 'animUp');
+    wrap.style.setProperty('--dur',`${dur}ms`);
 
-    const tile=document.createElement('div');tile.className='tile';
+    const margin=140;
+    const x=rand(margin,window.innerWidth-margin-cfg.tileW);
+    const y=rand(margin,window.innerHeight-margin-cfg.tileH);
+    wrap.style.left=x+'px';
+    wrap.style.top=y+'px';
 
-    // Choose background depending on theme
+    const tile=document.createElement('div');
+    tile.className='tile';
+
+    // Choose background depending on theme (with overrides)
     let bgSrc;
     if (cfg.theme==='down') {
       bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG_DOWN;
     } else {
       bgSrc = cfg.bgImage || DEFAULT_BG_UP;
     }
-    }
-    if (cfg.theme==='down') bgSrc = cfg.bgImageNeg || cfg.bgImage || DEFAULT_BG;
-    const img=document.createElement('img'); img.src=bgSrc; tile.appendChild(img);
+    const img=document.createElement('img');
+    img.src=bgSrc;
+    tile.appendChild(img);
 
-    const num=document.createElement('div');num.className='num';
+    // Number
+    const num=document.createElement('div');
+    num.className='num';
     const prefix = (cfg.theme==='down' && String(amount)[0]!== '-') ? '-' : '+';
     num.textContent=`${prefix}${Math.abs(amount)}`;
+    tile.appendChild(num);
 
+    // Label image
     const labelImg=document.createElement('img');
     labelImg.className='labelImg';
-    labelImg.src = (typeof STAT_LABELS!== 'undefined' && STAT_LABELS[stat]) ? STAT_LABELS[stat] : '';
-    tile.appendChild(labelImg);wrap.appendChild(tile);stage.appendChild(wrap);
+    labelImg.src = (STAT_LABELS[stat] || '');
+    tile.appendChild(labelImg);
 
+    wrap.appendChild(tile);
+    stage.appendChild(wrap);
+
+    // SFX
     const sfxToPlay = (cfg.theme==='down' && cfg.soundDown) ? cfg.soundDown : cfg.sound;
-    if(sfxToPlay){ try{ if(sfxEl.src!==sfxToPlay) sfxEl.src=sfxToPlay; sfxEl.currentTime=0; sfxEl.play().catch(()=>{});}catch(e){} }
+    if(sfxToPlay){
+      try{ if(sfxEl.src!==sfxToPlay) sfxEl.src=sfxToPlay; sfxEl.currentTime=0; sfxEl.play().catch(()=>{});}catch(e){}
+    }
 
     setTimeout(()=>wrap.remove(),dur+120);
+  }
 
   async function batchSpawn(){
     const total=cfg.count;const fixed=cfg.amount??null;const jobs=[];
