@@ -3,26 +3,47 @@
 <head>
 <meta charset="utf-8"/>
 <title>Uma Stats Bar Overlay</title>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <style>
   :root{
     --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
     --numColor:#4a2d00;
     --numShadow:0 1px 2px rgba(0,0,0,.25);
+    --header:#4b2f1a;     /* dark brown header */
+    --body:#fff2df;       /* cream white body */
     --chevOpacity:.60;
+    --slotW: 210px;       /* width of each stat slot */
+    --slotH: 86px;        /* height of body panel */
   }
   html,body{margin:0;background:transparent;height:100%}
-  #bar{display:flex;gap:4px;align-items:flex-start;justify-content:center;
-       height:100vh;pointer-events:none;padding:8px}
+  #wrap{display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+        height:100vh;pointer-events:none;gap:6px;padding:6px}
 
-  .slot{position:relative;width:200px;height:80px;
-        background-size:contain;background-repeat:no-repeat;background-position:center}
-  .val{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
-       font:900 32px/1 var(--font);color:var(--numColor);text-shadow:var(--numShadow)}
+  /* Header row (labels) */
+  #hdr{display:flex;gap:6px; padding:8px 10px; border-radius:10px;
+       background:var(--header); filter:drop-shadow(0 6px 22px rgba(0,0,0,.35))}
+  .hdrSlot{width:var(--slotW); height:38px; display:flex;align-items:center;justify-content:center}
+  .hdrSlot img{max-height:32px;object-fit:contain;filter:drop-shadow(0 2px 5px rgba(0,0,0,.25))}
+
+  /* Body row (numbers) */
+  #body{display:flex;gap:6px}
+  .slot{
+    position:relative; width:var(--slotW); height:var(--slotH);
+    background:var(--body);
+    border-radius:10px;
+    box-shadow:0 8px 24px rgba(0,0,0,.25) inset, 0 6px 18px rgba(0,0,0,.25);
+  }
+  .val{
+    position:absolute; left:50%; bottom:10px; transform:translateX(-50%);
+    font:900 38px/1 var(--font); color:var(--numColor); text-shadow:var(--numShadow);
+  }
 
   /* Chevron (in front of number) */
-  .chev{position:absolute;left:50%;top:40%;width:60px;
-        transform:translate(-50%,-50%);opacity:var(--chevOpacity);pointer-events:none;
-        filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))}
+  .chev{
+    position:absolute; left:50%; top:40%; width:64px;
+    transform:translate(-50%,-50%); opacity:var(--chevOpacity); pointer-events:none;
+    filter:drop-shadow(0 10px 20px rgba(0,0,0,.35))
+  }
   @keyframes rise {0%{transform:translate(-50%,-20%) scale(.9);opacity:0}
                    20%{opacity:1}
                    80%{transform:translate(-50%,-160%) scale(1.05);opacity:1}
@@ -35,15 +56,17 @@
   .animDown{animation:drop 900ms cubic-bezier(.2,.9,.2,1) forwards}
 
   /* Number pop */
-  .pop{animation:pop 400ms ease-out}
+  .pop{animation:pop 420ms ease-out}
   @keyframes pop{0%{transform:translateX(-50%) scale(.9)}
                  60%{transform:translateX(-50%) scale(1.1)}
                  100%{transform:translateX(-50%) scale(1)}}
 
   /* Delta bubble (+N / -N) */
-  .delta{position:absolute;left:50%;top:10%;transform:translate(-50%,-50%);
-         font:900 24px/1 var(--font);-webkit-text-stroke:3px #fff;opacity:0.95;
-         pointer-events:none;filter:drop-shadow(0 8px 16px rgba(0,0,0,.3))}
+  .delta{
+    position:absolute; left:50%; top:6%; transform:translate(-50%,-50%);
+    font:900 24px/1 var(--font); -webkit-text-stroke:3px #fff; opacity:.98;
+    pointer-events:none; filter:drop-shadow(0 8px 16px rgba(0,0,0,.30))
+  }
   .delta.up{
     background:linear-gradient(to top,#ff8a00,#ffd080);
     -webkit-background-clip:text; -webkit-text-fill-color:transparent;
@@ -57,29 +80,48 @@
 </style>
 </head>
 <body>
-<div id="bar">
-  <div class="slot" id="Speed"><span class="val" id="valSpeed">0</span></div>
-  <div class="slot" id="Stamina"><span class="val" id="valStamina">0</span></div>
-  <div class="slot" id="Power"><span class="val" id="valPower">0</span></div>
-  <div class="slot" id="Guts"><span class="val" id="valGuts">0</span></div>
-  <div class="slot" id="Wit"><span class="val" id="valWit">0</span></div>
+<div id="wrap">
+  <!-- header labels -->
+  <div id="hdr">
+    <div class="hdrSlot"><img id="lblSpeed"   alt="Speed"></div>
+    <div class="hdrSlot"><img id="lblStamina" alt="Stamina"></div>
+    <div class="hdrSlot"><img id="lblPower"   alt="Power"></div>
+    <div class="hdrSlot"><img id="lblGuts"    alt="Guts"></div>
+    <div class="hdrSlot"><img id="lblWit"     alt="Wit"></div>
+  </div>
+
+  <!-- body numbers -->
+  <div id="body">
+    <div class="slot" id="Speed"><span class="val" id="valSpeed">0</span></div>
+    <div class="slot" id="Stamina"><span class="val" id="valStamina">0</span></div>
+    <div class="slot" id="Power"><span class="val" id="valPower">0</span></div>
+    <div class="slot" id="Guts"><span class="val" id="valGuts">0</span></div>
+    <div class="slot" id="Wit"><span class="val" id="valWit">0</span></div>
+  </div>
 </div>
 
 <script>
 const qs=new URLSearchParams(location.search);
 
-/* Bar art (you said you’ll provide these) */
-const BARS={
-  Speed:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png",
-  Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_stamina.png",
-  Power:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_power.png",
-  Guts:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_guts.png",
-  Wit:"https://erzombie.github.io/stream-player-repo/uma_overlay/bar_wit.png"
-};
-const CHEV_UP="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png";
-const CHEV_DOWN="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png";
+/* Allow quick color overrides via URL */
+const headerColor = qs.get('headerColor');
+const bodyColor   = qs.get('bodyColor');
+if(headerColor) document.documentElement.style.setProperty('--header', headerColor);
+if(bodyColor)   document.documentElement.style.setProperty('--body',   bodyColor);
 
-/* Preload */
+/* Label art (use your uploaded bar label images) */
+const LABELS={
+  Speed:  "https://erzombie.github.io/stream-player-repo/uma_overlay/barlabel_speed.png",
+  Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/barlabel_stamina.png",
+  Power:  "https://erzombie.github.io/stream-player-repo/uma_overlay/barlabel_power.png",
+  Guts:   "https://erzombie.github.io/stream-player-repo/uma_overlay/barlabel_guts.png",
+  Wit:    "https://erzombie.github.io/stream-player-repo/uma_overlay/barlabel_wit.png"
+};
+/* Chevron assets (reusing your PNGs) */
+const CHEV_UP   ="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png";
+const CHEV_DOWN ="https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png";
+
+/* Preload helper */
 const preload=(urls)=>Promise.allSettled(urls.map(u=>new Promise(r=>{
   try{const im=new Image(); im.onload=im.onerror=()=>r(); im.src=u; if(im.decode)im.decode().then(r).catch(r);}
   catch{r()}
@@ -95,26 +137,26 @@ const totals={
 };
 const animStat=(qs.get('anim')||'').toLowerCase();   // e.g., "wit"
 const theme=(qs.get('theme')||'up').toLowerCase();   // "up" | "down"
-const delta=parseInt(qs.get('delta')||'0',10);       // e.g., +7 or -7
+const delta=parseInt(qs.get('delta')||'0',10);
 
+/* Fill header labels & numbers */
 function setSlot(name){
-  const slot=document.getElementById(name);
-  slot.style.backgroundImage=`url(${BARS[name]})`;
-  document.getElementById('val'+name).textContent=totals[name];
+  const lbl=document.getElementById('lbl'+name);
+  lbl.src = LABELS[name];
+  document.getElementById('val'+name).textContent = totals[name];
 }
 ['Speed','Stamina','Power','Guts','Wit'].forEach(setSlot);
 
+/* Animate a slot with chevron + delta bubble */
 function animateSlot(statName, theme, delta){
   const slot=document.getElementById(statName);
   if(!slot) return;
 
-  // Chevron
   const chev=document.createElement('img');
   chev.className='chev '+(theme==='down'?'animDown':'animUp');
-  chev.src= theme==='down'?CHEV_DOWN:CHEV_UP;
+  chev.src = (theme==='down'?CHEV_DOWN:CHEV_UP);
   slot.appendChild(chev);
 
-  // Delta +N / -N
   if(delta && !Number.isNaN(delta)){
     const d=document.createElement('div');
     d.className='delta '+(delta<0?'down':'up');
@@ -123,7 +165,6 @@ function animateSlot(statName, theme, delta){
     setTimeout(()=>d.remove(), 950);
   }
 
-  // Pop number
   const val=document.getElementById('val'+statName);
   val.classList.remove('pop'); void val.offsetWidth; val.classList.add('pop');
 
@@ -131,7 +172,7 @@ function animateSlot(statName, theme, delta){
 }
 
 (async()=>{
-  await preload([...Object.values(BARS), CHEV_UP, CHEV_DOWN]);
+  await preload([...Object.values(LABELS), CHEV_UP, CHEV_DOWN]);
   if(animStat){
     const key=animStat.charAt(0).toUpperCase()+animStat.slice(1);
     animateSlot(key, theme, delta);
