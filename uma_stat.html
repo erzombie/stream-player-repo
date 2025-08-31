@@ -15,7 +15,7 @@
     /* sizes + spacing */
     --numSize:60px;
     --labelH:58px;
-    --gap:57px;        /* distance from the top of number to top of label */
+    --gap:80px;        /* distance from the top of number to top of label */
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
@@ -57,12 +57,19 @@
   const DEFAULT_SFX_UP='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
   const DEFAULT_SFX_DOWN='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
 
-  const STAT_LABELS={
+  const STAT_LABELS_UP={
     Speed:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
     Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
     Power:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_power.png",
     Guts:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
     Wit:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
+  };
+  const STAT_LABELS_DOWN = {
+    Speed:   "URL_DOWN_speed.png",
+    Stamina: "URL_DOWN_stamina.png",
+    Power:   "URL_DOWN_power.png",
+    Guts:    "URL_DOWN_guts.png",
+    Wit:     "URL_DOWN_wit.png"
   };
 
   const qs=new URLSearchParams(location.search);
@@ -125,8 +132,16 @@
     const prefix=(isDown&&String(amount)[0]!=='-')?'-':'+';
     num.textContent=`${prefix}${Math.abs(amount)}`;tile.appendChild(num);
 
-    const labelImg=document.createElement('img');labelImg.className='labelImg';
-    labelImg.src=(STAT_LABELS[stat]||'');tile.appendChild(labelImg);
+    const labelImg=document.createElement('img');
+    labelImg.className='labelImg';
+
+    if (isDown) {
+    labelImg.src = (STAT_LABELS_DOWN[stat] || '');
+    } else {
+    labelImg.src = (STAT_LABELS_UP[stat] || '');
+    }
+
+tile.appendChild(labelImg);
 
     wrap.appendChild(tile);stage.appendChild(wrap);
 
@@ -160,7 +175,7 @@
   }
 
   window.addEventListener('load',()=>{
-    const imgList=[DEFAULT_BG_UP,DEFAULT_BG_DOWN,...Object.values(STAT_LABELS)];
+    const imgList=[DEFAULT_BG_UP,DEFAULT_BG_DOWN,...Object.values(STAT_LABELS_UP),...Object.values(STAT_LABELS_DOWN)];
     const loadImg=u=>new Promise(r=>{try{const im=new Image();im.onload=im.onerror=()=>r();im.src=u;if(im.decode)im.decode().then(()=>r()).catch(()=>r());}catch(e){r();}});
     const loadAud=u=>new Promise(r=>{try{const a=new Audio();a.src=u;const to=setTimeout(()=>r(),1500);a.addEventListener('canplaythrough',()=>{clearTimeout(to);r()},{once:true});a.addEventListener('error',()=>{clearTimeout(to);r()},{once:true});a.load()}catch(e){r();}});
     (async()=>{
