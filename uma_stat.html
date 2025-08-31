@@ -6,6 +6,14 @@
   <title>Uma Stat Overlay</title>
   <style>
     :root{
+      --gap:16px; } /* distance between number and label */
+      num{ top:0 } /* already */
+      .labelImg{
+      top: calc(var(--numSize) + var(--gap));
+      bottom:auto;                 /* stop using bottom */
+      height:var(--labelH);
+      left:50%; transform:translateX(-50%);
+      }
       --white:#ffffff;
       --strokeW:4px;
       --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
