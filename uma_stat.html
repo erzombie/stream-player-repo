@@ -15,13 +15,19 @@
     /* sizes + spacing */
     --numSize:55px;
     --labelH:58px;
-    --gap:400px;        /* distance from the top of number to top of label */
+    --gap:80px;        /* distance from the top of number to top of label */
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
     .popup{position:absolute;filter:drop-shadow(var(--shadow));will-change:transform,opacity}
     .tile{position:relative;width:var(--tileW);height:var(--tileH);transform: scale(0.7);transform-origin: center top;}
-    .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
+    /*.tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}*/
+    .chev{
+    position:absolute;
+    left:50%; top:50%;
+    width:100%; height:auto;
+    transform:translate(-50%,-50%);
+    }
 
     /* number (uses --numSize) */
     .num{position:absolute;left:0;right:0;top:0;text-align:center;
@@ -126,7 +132,10 @@
     const tile=document.createElement('div');tile.className='tile';
 
     const bgSrc=isDown?DEFAULT_BG_DOWN:DEFAULT_BG_UP;
-    const img=document.createElement('img');img.src=bgSrc;img.style.opacity=0.6;tile.appendChild(img);
+    img.className='chev';           // NEW: so CSS targets only the chevron bg
+    img.src=bgSrc;
+    img.style.opacity=0.6;
+    tile.appendChild(img);
 
     const num=document.createElement('div');num.className='num '+(isDown?'down':'up');
     const prefix=(isDown&&String(amount)[0]!=='-')?'-':'+';
