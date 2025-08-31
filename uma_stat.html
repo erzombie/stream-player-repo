@@ -11,17 +11,17 @@
       --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
       --shadow:0 14px 40px rgba(0,0,0,.35);
 
-      /* base tile box (used for spawn bounds) */
-      --tileW:200px; 
+      /* spawn bounds (logical size, not scaled) */
+      --tileW:200px;
       --tileH:120px;
 
-      /* visual scale for the whole tile */
+      /* global visual scale */
       --scale:0.7;
 
       /* sizes + spacing */
-      --numSize:55px;    /* number font size */
-      --labelH:58px;     /* label image height */
-      --gap:10px;        /* distance from top of number to top of label */
+      --numSize:55px;   /* number font size */
+      --labelH:58px;    /* label image height */
+      --gap:40px;       /* distance from TOP OF TILE to TOP OF LABEL */
     }
 
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
@@ -64,11 +64,11 @@
       filter:drop-shadow(0 0 6px rgba(58,141,255,.35));
     }
 
-    /* label (gap-based placement) */
+    /* label — positioned by direct gap from top of tile */
     .labelImg{
       position:absolute;
       left:50%; transform:translateX(-50%);
-      top: calc(var(--numSize) + var(--gap));   /* space below number */
+      top: var(--gap);
       height: var(--labelH);
       object-fit:contain; pointer-events:none; filter:none; opacity:1;
     }
@@ -102,7 +102,7 @@
   const DEFAULT_SFX_UP='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
   const DEFAULT_SFX_DOWN='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
 
-  // label sets (replace with your own PNGs)
+  // label sets (replace DOWN_* with your PNGs later)
   const STAT_LABELS_UP={
     Speed:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
     Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
@@ -123,13 +123,13 @@
   const setRawVar=(name,val)=>{ if(!val) return; document.documentElement.style.setProperty(name,val); };
 
   // optional URL overrides
-  setPxVar('--numSize',  qs.get('numSize'));
-  setPxVar('--labelH',   qs.get('labelH'));
-  setPxVar('--gap',      qs.get('gap'));
-  setPxVar('--strokeW',  qs.get('strokeW'));
-  setRawVar('--scale',   qs.get('scale'));   // e.g. 0.5
-  setPxVar('--tileW',    qs.get('tileW'));
-  setPxVar('--tileH',    qs.get('tileH'));
+  setPxVar('--numSize', qs.get('numSize'));
+  setPxVar('--labelH',  qs.get('labelH'));
+  setPxVar('--gap',     qs.get('gap'));
+  setPxVar('--strokeW', qs.get('strokeW'));
+  setRawVar('--scale',  qs.get('scale'));     // e.g. 0.5
+  setPxVar('--tileW',   qs.get('tileW'));
+  setPxVar('--tileH',   qs.get('tileH'));
 
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
   const cfg={
@@ -144,11 +144,10 @@
     concurrent:1,
     minDelay:parseInt(qs.get('minDelay')||'50',10),
     maxDelay:parseInt(qs.get('maxDelay')||'150',10),
-    tileW:parseInt((getComputedStyle(document.documentElement).getPropertyValue('--tileW')||'200px'),10),
-    tileH:parseInt((getComputedStyle(document.documentElement).getPropertyValue('--tileH')||'120px'),10),
+    tileW:parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tileW'),10),
+    tileH:parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tileH'),10),
     lowPerf:qs.get('lowPerf')==='1'
   };
-
   if(cfg.lowPerf)document.body.classList.add('low');
 
   const stage=document.getElementById('stage');
@@ -184,7 +183,7 @@
     num.textContent=`${prefix}${Math.abs(amount)}`;
     tile.appendChild(num);
 
-    // label
+    // label (theme-based)
     const labelImg=document.createElement('img');
     labelImg.className='labelImg';
     labelImg.src = (isDown ? STAT_LABELS_DOWN[stat] : STAT_LABELS_UP[stat]) || '';
