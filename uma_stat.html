@@ -6,48 +6,87 @@
   <title>Uma Stat Overlay</title>
   <style>
     :root{
-    --white:#ffffff;
-    --strokeW:4px;
-    --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
-    --shadow:0 14px 40px rgba(0,0,0,.35);
-    --tileW:260px; --tileH:180px;
+      --white:#ffffff;
+      --strokeW:4px;
+      --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+      --shadow:0 14px 40px rgba(0,0,0,.35);
 
-    /* sizes + spacing */
-    --numSize:55px;
-    --labelH:58px;
-    --gap:80px;        /* distance from the top of number to top of label */
+      /* base tile box (used for spawn bounds) */
+      --tileW:200px; 
+      --tileH:120px;
+
+      /* visual scale for the whole tile */
+      --scale:0.7;
+
+      /* sizes + spacing */
+      --numSize:55px;    /* number font size */
+      --labelH:58px;     /* label image height */
+      --gap:80px;        /* distance from top of number to top of label */
     }
+
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
     .popup{position:absolute;filter:drop-shadow(var(--shadow));will-change:transform,opacity}
-    .tile{position:relative;width:var(--tileW);height:var(--tileH);transform: scale(0.7);transform-origin: center top;}
-    /*.tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}*/
+
+    .tile{
+      position:relative;
+      width:var(--tileW);
+      height:var(--tileH);
+      transform: scale(var(--scale));
+      transform-origin:center top;
+    }
+
+    /* chevron background only */
     .chev{
-    position:absolute;
-    left:50%; top:50%;
-    width:100%; height:auto;
-    transform:translate(-50%,-50%);
+      position:absolute;
+      left:50%; top:50%;
+      width:100%; height:auto;
+      transform:translate(-50%,-50%);
+      opacity:.6;
+      pointer-events:none;
     }
 
-    /* number (uses --numSize) */
-    .num{position:absolute;left:0;right:0;top:0;text-align:center;
-         font:900 var(--numSize)/1 var(--font);font-weight:900;opacity:0.9;
-         -webkit-text-stroke:var(--strokeW) var(--white);}
-    .num.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(255,138,0,.35));}
-    .num.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(58,141,255,.35));}
+    /* number */
+    .num{
+      position:absolute; left:0; right:0; top:0; text-align:center;
+      font:900 var(--numSize)/1 var(--font); font-weight:900; opacity:0.9;
+      -webkit-text-stroke:var(--strokeW) var(--white);
+      pointer-events:none;
+    }
+    .num.up{
+      background:linear-gradient(to top,#ff8a00,#ffd080);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      filter:drop-shadow(0 0 6px rgba(255,138,0,.35));
+    }
+    .num.down{
+      background:linear-gradient(to top,#3a8dff,#a0cfff);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+      filter:drop-shadow(0 0 6px rgba(58,141,255,.35));
+    }
 
-    /* label (uses --labelH and --labelOffset) */
+    /* label (gap-based placement) */
     .labelImg{
-    position:absolute;
-    left:50%; transform:translateX(-50%);
-    top: calc(var(--numSize) + var(--gap));  /* space below the number */
-    height: var(--labelH);
-    object-fit:contain; pointer-events:none; filter:none; opacity:1;
+      position:absolute;
+      left:50%; transform:translateX(-50%);
+      top: calc(var(--numSize) + var(--gap));   /* space below number */
+      height: var(--labelH);
+      object-fit:contain; pointer-events:none; filter:none; opacity:1;
     }
 
-    @keyframes riseFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,-20px,0) scale(1.05)}70%{transform:translate3d(0,-100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,-150px,0) scale(1);opacity:0}}
+    @keyframes riseFade{
+      0%{transform:translate3d(0,0,0) scale(.92);opacity:0}
+      10%{opacity:1;transform:translate3d(0,-20px,0) scale(1.05)}
+      70%{transform:translate3d(0,-100px,0) scale(1.02);opacity:1}
+      100%{transform:translate3d(0,-150px,0) scale(1);opacity:0}
+    }
     .animUp{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
-    @keyframes dropFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,20px,0) scale(1.05)}70%{transform:translate3d(0,100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,150px,0) scale(1);opacity:0}}
+
+    @keyframes dropFade{
+      0%{transform:translate3d(0,0,0) scale(.92);opacity:0}
+      10%{opacity:1;transform:translate3d(0,20px,0) scale(1.05)}
+      70%{transform:translate3d(0,100px,0) scale(1.02);opacity:1}
+      100%{transform:translate3d(0,150px,0) scale(1);opacity:0}
+    }
     .animDown{animation:dropFade var(--dur,1400ms) cubic-bezier(.2,.9,.2,1) forwards}
 
     body.low .popup{filter:none}
@@ -63,6 +102,7 @@
   const DEFAULT_SFX_UP='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos.ogg';
   const DEFAULT_SFX_DOWN='https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg.ogg';
 
+  // label sets (replace with your own PNGs)
   const STAT_LABELS_UP={
     Speed:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_speed.png",
     Stamina:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_stamina.png",
@@ -70,25 +110,27 @@
     Guts:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_guts.png",
     Wit:"https://erzombie.github.io/stream-player-repo/uma_overlay/label_wit.png"
   };
-  const STAT_LABELS_DOWN = {
-    Speed:   "URL_DOWN_speed.png",
-    Stamina: "URL_DOWN_stamina.png",
-    Power:   "URL_DOWN_power.png",
-    Guts:    "URL_DOWN_guts.png",
-    Wit:     "URL_DOWN_wit.png"
+  const STAT_LABELS_DOWN={
+    Speed:"URL_DOWN_speed.png",
+    Stamina:"URL_DOWN_stamina.png",
+    Power:"URL_DOWN_power.png",
+    Guts:"URL_DOWN_guts.png",
+    Wit:"URL_DOWN_wit.png"
   };
 
   const qs=new URLSearchParams(location.search);
+  const setPxVar=(name,val)=>{ if(!val) return; const v=/[a-z%]$/i.test(val)?val:`${val}px`; document.documentElement.style.setProperty(name,v); };
+  const setRawVar=(name,val)=>{ if(!val) return; document.documentElement.style.setProperty(name,val); };
 
-  /* OPTIONAL: allow quick sizing via URL (no need to touch other code)
-     e.g. ?numSize=48&labelH=44&labelOffset=-22&strokeW=3 */
-  const setPxVar=(name,val)=>{ if(!val)return; const v=/[a-z%]$/i.test(val)?val:`${val}px`; document.documentElement.style.setProperty(name,v); };
-  setPxVar('--numSize', qs.get('numSize'));
-  setPxVar('--labelH', qs.get('labelH'));
-  setPxVar('--labelOffset', qs.get('labelOffset'));
-  setPxVar('--strokeW', qs.get('strokeW'));
+  // optional URL overrides
+  setPxVar('--numSize',  qs.get('numSize'));
+  setPxVar('--labelH',   qs.get('labelH'));
+  setPxVar('--gap',      qs.get('gap'));
+  setPxVar('--strokeW',  qs.get('strokeW'));
+  setRawVar('--scale',   qs.get('scale'));   // e.g. 0.5
+  setPxVar('--tileW',    qs.get('tileW'));
+  setPxVar('--tileH',    qs.get('tileH'));
 
-  // minimal config (unchanged behavior)
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
   const cfg={
     count:Math.max(1,Math.min(7,parseInt(qs.get('count')||String(Math.floor(Math.random()*7)+1),10))),
@@ -102,13 +144,11 @@
     concurrent:1,
     minDelay:parseInt(qs.get('minDelay')||'50',10),
     maxDelay:parseInt(qs.get('maxDelay')||'150',10),
-    tileW:parseInt(qs.get('tileW')||'200',10),
-    tileH:parseInt(qs.get('tileH')||'120',10),
+    tileW:parseInt((getComputedStyle(document.documentElement).getPropertyValue('--tileW')||'200px'),10),
+    tileH:parseInt((getComputedStyle(document.documentElement).getPropertyValue('--tileH')||'120px'),10),
     lowPerf:qs.get('lowPerf')==='1'
   };
 
-  document.documentElement.style.setProperty('--tileW', cfg.tileW+'px');
-  document.documentElement.style.setProperty('--tileH', cfg.tileH+'px');
   if(cfg.lowPerf)document.body.classList.add('low');
 
   const stage=document.getElementById('stage');
@@ -131,29 +171,28 @@
 
     const tile=document.createElement('div');tile.className='tile';
 
+    // chevron bg
     const bgSrc=isDown?DEFAULT_BG_DOWN:DEFAULT_BG_UP;
-    img.className='chev';           // NEW: so CSS targets only the chevron bg
+    const img=document.createElement('img');
+    img.className='chev';
     img.src=bgSrc;
-    img.style.opacity=0.6;
     tile.appendChild(img);
 
+    // number
     const num=document.createElement('div');num.className='num '+(isDown?'down':'up');
-    const prefix=(isDown&&String(amount)[0]!=='-')?'-':'+';
-    num.textContent=`${prefix}${Math.abs(amount)}`;tile.appendChild(num);
+    const prefix=(isDown&&String(amount)[0]!=='-')?'-':'+'; // ensure sign
+    num.textContent=`${prefix}${Math.abs(amount)}`;
+    tile.appendChild(num);
 
+    // label
     const labelImg=document.createElement('img');
     labelImg.className='labelImg';
-
-    if (isDown) {
-    labelImg.src = (STAT_LABELS_DOWN[stat] || '');
-    } else {
-    labelImg.src = (STAT_LABELS_UP[stat] || '');
-    }
-
-tile.appendChild(labelImg);
+    labelImg.src = (isDown ? STAT_LABELS_DOWN[stat] : STAT_LABELS_UP[stat]) || '';
+    tile.appendChild(labelImg);
 
     wrap.appendChild(tile);stage.appendChild(wrap);
 
+    // sfx
     const sfxToPlay=isDown?cfg.soundDown:cfg.soundUp;
     if(sfxToPlay){try{const a=new Audio(sfxToPlay);a.volume=cfg.volume;a.play().catch(()=>{});}catch(e){}}
 
@@ -184,14 +223,16 @@ tile.appendChild(labelImg);
   }
 
   window.addEventListener('load',()=>{
-    const imgList=[DEFAULT_BG_UP,DEFAULT_BG_DOWN,...Object.values(STAT_LABELS_UP),...Object.values(STAT_LABELS_DOWN)];
+    const imgList=[DEFAULT_BG_UP,DEFAULT_BG_DOWN,
+                   ...Object.values(STAT_LABELS_UP),
+                   ...Object.values(STAT_LABELS_DOWN)];
     const loadImg=u=>new Promise(r=>{try{const im=new Image();im.onload=im.onerror=()=>r();im.src=u;if(im.decode)im.decode().then(()=>r()).catch(()=>r());}catch(e){r();}});
     const loadAud=u=>new Promise(r=>{try{const a=new Audio();a.src=u;const to=setTimeout(()=>r(),1500);a.addEventListener('canplaythrough',()=>{clearTimeout(to);r()},{once:true});a.addEventListener('error',()=>{clearTimeout(to);r()},{once:true});a.load()}catch(e){r();}});
     (async()=>{
       await Promise.allSettled(imgList.map(loadImg));
       await Promise.allSettled([loadAud(DEFAULT_SFX_UP),loadAud(DEFAULT_SFX_DOWN)]);
       stage.style.visibility='visible';
-      await batchSpawn()
+      await batchSpawn();
     })();
   });
   </script>
