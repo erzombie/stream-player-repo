@@ -6,23 +6,16 @@
   <title>Uma Stat Overlay</title>
   <style>
     :root{
-      --gap:16px; } /* distance between number and label */
-      num{ top:0 } /* already */
-      .labelImg{
-      top: calc(var(--numSize) + var(--gap));
-      bottom:auto;                 /* stop using bottom */
-      height:var(--labelH);
-      left:50%; transform:translateX(-50%);
-      }
-      --white:#ffffff;
-      --strokeW:4px;
-      --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
-      --shadow:0 14px 40px rgba(0,0,0,.35);
-      --tileW:260px; --tileH:180px;
-      /* NEW: tweak these to change size */
-      --numSize:60px;       /* number font size */
-      --labelH:58px;        /* label image height */
-      --labelOffset:-200px;  /* label vertical offset */
+    --white:#ffffff;
+    --strokeW:4px;
+    --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+    --shadow:0 14px 40px rgba(0,0,0,.35);
+    --tileW:260px; --tileH:180px;
+
+    /* sizes + spacing */
+    --numSize:60px;
+    --labelH:58px;
+    --gap:57px;        /* distance from the top of number to top of label */
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
@@ -38,9 +31,13 @@
     .num.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(58,141,255,.35));}
 
     /* label (uses --labelH and --labelOffset) */
-    .labelImg{position:absolute;left:50%;transform:translateX(-50%);
-              bottom:var(--labelOffset);height:var(--labelH);
-              object-fit:contain;pointer-events:none;filter:none;opacity:1}
+    .labelImg{
+    position:absolute;
+    left:50%; transform:translateX(-50%);
+    top: calc(var(--numSize) + var(--gap));  /* space below the number */
+    height: var(--labelH);
+    object-fit:contain; pointer-events:none; filter:none; opacity:1;
+    }
 
     @keyframes riseFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,-20px,0) scale(1.05)}70%{transform:translate3d(0,-100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,-150px,0) scale(1);opacity:0}}
     .animUp{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
