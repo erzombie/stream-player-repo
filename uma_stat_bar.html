@@ -7,15 +7,16 @@
   <style>
     :root{
       --brown:#3a2514;
-      --cream:#f5efe3;
-      --divider:#e1d6c6;
+      --cream:#f8f2e8;
+      --divider:#e5d7c6;
       --num:#4a2c0a;
-      --shadow:0 12px 24px rgba(0,0,0,.22);
+      --shadow:0 12px 26px rgba(0,0,0,.24);
     }
     html,body{margin:0;background:transparent}
     body{font-family:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;color:var(--num)}
 
-    .bar{width:max-content;margin:18px auto;border-radius:12px;box-shadow:var(--shadow);overflow:hidden}
+    .bar{width:max-content;margin:18px auto;border-radius:12px;box-shadow:var(--shadow);overflow:hidden;
+         visibility:hidden} /* <- hidden until waitMs done */
     .row{display:flex}
     .cell{min-width:180px;border-right:1px solid var(--divider)}
     .cell:last-child{border-right:0}
@@ -23,11 +24,12 @@
     .label{height:46px;background:var(--brown);display:flex;align-items:center;justify-content:center}
     .label img{height:28px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 
-    .valBox{position:relative;height:64px;background:#f8f2e8;display:flex;align-items:center;justify-content:center}
-    .val{font-weight:900;font-size:40px;line-height:1}
+    .valBox{position:relative;height:64px;background:var(--cream);display:flex;align-items:center;justify-content:center}
+    .val{font-weight:900;font-size:40px;line-height:1;will-change:contents}
 
     /* chevron image inside value box */
-    .chev{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;opacity:.95;filter:drop-shadow(0 8px 18px rgba(0,0,0,.28))}
+    .chev{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;opacity:.96;
+          filter:drop-shadow(0 8px 18px rgba(0,0,0,.28));will-change:top,opacity}
   </style>
 </head>
 <body>
@@ -42,13 +44,12 @@
   </div>
 
   <script>
-    // Assets (same as flying overlay)
     const CHEV_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
     const CHEV_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
 
-    const qs = new URLSearchParams(location.search);
-    const theme  = (qs.get('theme')||'up').toLowerCase();
-    const waitMs = parseInt(qs.get('waitMs')||'0',10);
+    const qs    = new URLSearchParams(location.search);
+    const theme = (qs.get('theme')||'up').toLowerCase(); // fallback if deltas equal
+    const waitMs= parseInt(qs.get('waitMs')||'0',10);
 
     // Prev totals (p*) and Final totals
     const prev = {
@@ -66,57 +67,63 @@
       Wit:     parseInt(qs.get('wit')     || '0', 10),
     };
 
-    // Optional demo: ?demo=1
+    // Optional demo
     if(qs.get('demo')==='1'){
       prev.Speed=0; prev.Stamina=0; prev.Power=0; prev.Guts=0; prev.Wit=0;
-      finalV.Speed=108; finalV.Stamina=50; finalV.Power=20; finalV.Guts=-39; finalV.Wit=-20;
+      finalV.Speed=63; finalV.Stamina=22; finalV.Power=86; finalV.Guts=53; finalV.Wit=34;
+      // simulate wait so you can see desync otherwise
+      if(!qs.has('waitMs')) history.replaceState({},'',location.pathname+'?demo=1&waitMs=1500');
     }
 
-    const STAT_KEYS = ['Speed','Stamina','Power','Guts','Wit'];
+    const KEYS=['Speed','Stamina','Power','Guts','Wit'];
 
-    // Render previous values
-    for(const k of STAT_KEYS){
-      document.getElementById('val_'+k).textContent = prev[k];
-    }
+    // Set previous values
+    for(const k of KEYS) document.getElementById('val_'+k).textContent = prev[k];
 
-    // After waitMs, animate only stats that changed
-    setTimeout(()=> {
-      for(const k of STAT_KEYS){
+    // Reveal bar only when it's time to run (prevents flicker / early start)
+    setTimeout(()=>{
+      document.getElementById('bar').style.visibility='visible';
+      // Animate only those with delta ≠ 0
+      for(const k of KEYS){
         const from = prev[k], to = finalV[k];
-        if(from === to) continue;
-        animateCell(k, from, to, theme);
+        if(from===to) continue;
+        animateStat(k, from, to);
       }
     }, Math.max(0, waitMs));
 
-    function animateCell(stat, fromVal, toVal, theme){
-      const valEl = document.getElementById('val_'+stat);
-      const box   = document.getElementById('box_'+stat); // .valBox
-      if(!valEl || !box) return;
+    function animateStat(stat, fromVal, toVal){
+      const box  = document.getElementById('box_'+stat); // .valBox
+      const valEl= document.getElementById('val_'+stat);
+      if(!box||!valEl) return;
 
-      // tween number (baseline stays put)
+      // Number tween only (baseline stays fixed)
       tweenNumber(valEl, fromVal, toVal, 900);
 
-      // chevron inside number box – compute start/end so the TIP meets the border
+      // Chevron animation — runs full height so TIP hits edge
+      const isDown = (toVal < fromVal) || (toVal===fromVal && theme==='down');
       const chev = new Image();
-      const isDown = (theme==='down' || toVal < fromVal);
       chev.src = isDown ? CHEV_DOWN : CHEV_UP;
       chev.className = 'chev';
-      // choose size that reads well
-      const chevH = 38; // px
+
+      // size and travel
+      const chevH = 40; // a bit larger for readability
       chev.style.height = chevH + 'px';
-      chev.style.top = '0px';
+      // compute start/end so the visible tip reaches the edge of the inner box
+      const pad = 6;                 // keep from clipping
+      const h   = box.clientHeight;
+      const startTop = isDown ? pad : (h - chevH - pad);
+      const endTop   = isDown ? (h - chevH - pad) : pad;
+
+      chev.style.top = startTop+'px';
       box.appendChild(chev);
 
-      const pad = 6;                      // small safety so tip doesn't clip
-      const boxH = box.clientHeight;
-      const startTop = isDown ? pad : (boxH - chevH - pad);
-      const endTop   = isDown ? (boxH - chevH - pad) : pad;
-
-      // Web Animations API: animate top property
+      // Web Animations API
       chev.animate(
-        [{ top: startTop + 'px', opacity: 0 },
-         { top: (startTop + endTop)/2 + 'px', opacity: 1, offset: .25 },
-         { top: endTop + 'px', opacity: 0 }],
+        [
+          { top:startTop+'px', opacity:0 },
+          { top:((startTop*2+endTop)/3)+'px', opacity:1, offset:.25 },
+          { top:endTop+'px',   opacity:0 }
+        ],
         { duration: 900, easing: 'cubic-bezier(.2,.9,.2,1)' }
       ).onfinish = ()=> chev.remove();
     }
@@ -124,10 +131,9 @@
     function tweenNumber(el, from, to, dur){
       const t0 = performance.now();
       function step(t){
-        const p = Math.min(1, (t - t0)/dur);
-        const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
-        const v = Math.round(from + (to - from)*e);
-        el.textContent = v;
+        const p = Math.min(1,(t - t0)/dur);
+        const e = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(from + (to - from)*e);
         if(p<1) requestAnimationFrame(step); else el.textContent = to;
       }
       requestAnimationFrame(step);
