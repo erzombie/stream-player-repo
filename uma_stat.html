@@ -11,29 +11,33 @@
       --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
       --shadow:0 14px 40px rgba(0,0,0,.35);
       --tileW:260px; --tileH:180px;
+      /* NEW: tweak these to change size */
+      --numSize:64px;       /* number font size */
+      --labelH:58px;        /* label image height */
+      --labelOffset:-30px;  /* label vertical offset */
     }
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
-
     .popup{position:absolute;filter:drop-shadow(var(--shadow));will-change:transform,opacity}
-
     .tile{position:relative;width:var(--tileW);height:var(--tileH)}
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
 
-    .num{position:absolute;left:0;right:0;top:0px;text-align:center;font:900 64px/1 var(--font);font-weight:900;opacity:0.9;-webkit-text-stroke:var(--strokeW) var(--white);}
+    /* number (uses --numSize) */
+    .num{position:absolute;left:0;right:0;top:0;text-align:center;
+         font:900 var(--numSize)/1 var(--font);font-weight:900;opacity:0.9;
+         -webkit-text-stroke:var(--strokeW) var(--white);}
     .num.up{background:linear-gradient(to top,#ff8a00,#ffd080);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(255,138,0,.35));}
     .num.down{background:linear-gradient(to top,#3a8dff,#a0cfff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 6px rgba(58,141,255,.35));}
 
-    .labelImg{position:absolute;left:50%;transform:translateX(-50%);bottom:-30px;height:58px;object-fit:contain;pointer-events:none;filter:none;opacity:1}
+    /* label (uses --labelH and --labelOffset) */
+    .labelImg{position:absolute;left:50%;transform:translateX(-50%);
+              bottom:var(--labelOffset);height:var(--labelH);
+              object-fit:contain;pointer-events:none;filter:none;opacity:1}
 
     @keyframes riseFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,-20px,0) scale(1.05)}70%{transform:translate3d(0,-100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,-150px,0) scale(1);opacity:0}}
     .animUp{animation:riseFade var(--dur,1600ms) cubic-bezier(.2,.9,.2,1) forwards}
-
     @keyframes dropFade{0%{transform:translate3d(0,0,0) scale(.92);opacity:0}10%{opacity:1;transform:translate3d(0,20px,0) scale(1.05)}70%{transform:translate3d(0,100px,0) scale(1.02);opacity:1}100%{transform:translate3d(0,150px,0) scale(1);opacity:0}}
     .animDown{animation:dropFade var(--dur,1400ms) cubic-bezier(.2,.9,.2,1) forwards}
-
-    /* sparkle */
-    25%{opacity:.85}100%{opacity:0;transform:translate(-50%,-50%) scale(1.15) rotate(calc(var(--rot,0deg) + 28deg))}}
 
     body.low .popup{filter:none}
     body.low .num.up, body.low .num.down{text-shadow:none;filter:none}
@@ -57,6 +61,16 @@
   };
 
   const qs=new URLSearchParams(location.search);
+
+  /* OPTIONAL: allow quick sizing via URL (no need to touch other code)
+     e.g. ?numSize=48&labelH=44&labelOffset=-22&strokeW=3 */
+  const setPxVar=(name,val)=>{ if(!val)return; const v=/[a-z%]$/i.test(val)?val:`${val}px`; document.documentElement.style.setProperty(name,v); };
+  setPxVar('--numSize', qs.get('numSize'));
+  setPxVar('--labelH', qs.get('labelH'));
+  setPxVar('--labelOffset', qs.get('labelOffset'));
+  setPxVar('--strokeW', qs.get('strokeW'));
+
+  // minimal config (unchanged behavior)
   const STAT_POOL=['Speed','Stamina','Power','Guts','Wit'];
   const cfg={
     count:Math.max(1,Math.min(7,parseInt(qs.get('count')||String(Math.floor(Math.random()*7)+1),10))),
@@ -73,19 +87,18 @@
     tileW:parseInt(qs.get('tileW')||'260',10),
     tileH:parseInt(qs.get('tileH')||'180',10),
     lowPerf:qs.get('lowPerf')==='1'
-  }
-  const list = (q) => (qs.get(q)||'').split('|').filter(Boolean);
-  const forcedStats   = list('stats');    // e.g. "Speed|Guts|Wit"
-  const forcedAmounts = list('amounts')   // e.g. "5|1|12"  (length = count)
-                        .map(v => parseInt(v,10))
-                        .filter(n => !Number.isNaN(n));
-    
+  };
+
   document.documentElement.style.setProperty('--tileW', cfg.tileW+'px');
   document.documentElement.style.setProperty('--tileH', cfg.tileH+'px');
   if(cfg.lowPerf)document.body.classList.add('low');
 
   const stage=document.getElementById('stage');
-  const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;const choice=a=>a[Math.floor(Math.random()*a.length)];
+  const rand=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+  const choice=a=>a[Math.floor(Math.random()*a.length)];
+  const list = (q) => (qs.get(q)||'').split('|').filter(Boolean);
+  const forcedStats   = list('stats');
+  const forcedAmounts = list('amounts').map(v=>parseInt(v,10)).filter(n=>!Number.isNaN(n));
 
   function spawnOne({stat,amount,dur}){
     const wrap=document.createElement('div');
@@ -103,8 +116,6 @@
     const bgSrc=isDown?DEFAULT_BG_DOWN:DEFAULT_BG_UP;
     const img=document.createElement('img');img.src=bgSrc;img.style.opacity=0.6;tile.appendChild(img);
 
-    
-
     const num=document.createElement('div');num.className='num '+(isDown?'down':'up');
     const prefix=(isDown&&String(amount)[0]!=='-')?'-':'+';
     num.textContent=`${prefix}${Math.abs(amount)}`;tile.appendChild(num);
@@ -121,22 +132,38 @@
   }
 
   async function batchSpawn(){
-  const total = cfg.count;
-  const jobs = [];
-  for (let i = 0; i < total; i++) {
-  const stat   = forcedStats[i]   || choice(cfg.statPool);
-  const amount = (forcedAmounts[i] != null) ? forcedAmounts[i] : rand(1,15);
-  jobs.push({ stat, amount, delay: rand(cfg.minDelay, cfg.maxDelay) });
-}
+    const total = cfg.count;
+    const jobs = [];
+    for (let i = 0; i < total; i++) {
+      const stat   = forcedStats[i]   || choice(cfg.statPool);
+      const amount = (forcedAmounts[i] != null) ? forcedAmounts[i] : rand(1,15);
+      jobs.push({ stat, amount, delay: rand(cfg.minDelay, cfg.maxDelay) });
+    }
     let inFlight=0,idx=0;
-    return new Promise(res=>{function go(){while(inFlight<cfg.concurrent&&idx<jobs.length){const j=jobs[idx++];inFlight++;setTimeout(()=>{spawnOne({stat:j.stat,amount:j.amount,dur:(cfg.theme==='down'?cfg.durDown:cfg.durUp)});setTimeout(()=>{inFlight--;go();if(idx===jobs.length&&inFlight===0)res()},(cfg.theme==='down'?cfg.durDown:cfg.durUp)+50)},j.delay)}}go()});
+    return new Promise(res=>{
+      function go(){
+        while(inFlight<cfg.concurrent&&idx<jobs.length){
+          const j=jobs[idx++];inFlight++;
+          setTimeout(()=>{
+            spawnOne({stat:j.stat,amount:j.amount,dur:(cfg.theme==='down'?cfg.durDown:cfg.durUp)});
+            setTimeout(()=>{inFlight--;go();if(idx===jobs.length&&inFlight===0)res()},(cfg.theme==='down'?cfg.durDown:cfg.durUp)+50)
+          },j.delay)
+        }
+      }
+      go()
+    });
   }
 
   window.addEventListener('load',()=>{
     const imgList=[DEFAULT_BG_UP,DEFAULT_BG_DOWN,...Object.values(STAT_LABELS)];
     const loadImg=u=>new Promise(r=>{try{const im=new Image();im.onload=im.onerror=()=>r();im.src=u;if(im.decode)im.decode().then(()=>r()).catch(()=>r());}catch(e){r();}});
     const loadAud=u=>new Promise(r=>{try{const a=new Audio();a.src=u;const to=setTimeout(()=>r(),1500);a.addEventListener('canplaythrough',()=>{clearTimeout(to);r()},{once:true});a.addEventListener('error',()=>{clearTimeout(to);r()},{once:true});a.load()}catch(e){r();}});
-    (async()=>{await Promise.allSettled(imgList.map(loadImg));await Promise.allSettled([loadAud(DEFAULT_SFX_UP),loadAud(DEFAULT_SFX_DOWN)]);stage.style.visibility='visible';await batchSpawn()})();
+    (async()=>{
+      await Promise.allSettled(imgList.map(loadImg));
+      await Promise.allSettled([loadAud(DEFAULT_SFX_UP),loadAud(DEFAULT_SFX_DOWN)]);
+      stage.style.visibility='visible';
+      await batchSpawn()
+    })();
   });
   </script>
 </body>
