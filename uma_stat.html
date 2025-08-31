@@ -19,7 +19,7 @@
     html,body{margin:0;height:100%;background:transparent;overflow:hidden}
     #stage{position:relative;width:100vw;height:100vh;pointer-events:none}
     .popup{position:absolute;filter:drop-shadow(var(--shadow));will-change:transform,opacity}
-    .tile{position:relative;width:var(--tileW);height:var(--tileH);transform: scale(0.5);transform-origin: center top;}
+    .tile{position:relative;width:var(--tileW);height:var(--tileH);transform: scale(0.7);transform-origin: center top;}
     .tile img{position:absolute;left:50%;top:50%;width:100%;height:auto;transform:translate(-50%,-50%)}
 
     /* number (uses --numSize) */
@@ -83,9 +83,9 @@
     volume:Math.max(0,Math.min(1,parseFloat(qs.get('vol')||qs.get('volume')||'1'))),
     concurrent:1,
     minDelay:parseInt(qs.get('minDelay')||'50',10),
-    maxDelay:parseInt(qs.get('maxDelay')||'200',10),
-    tileW:parseInt(qs.get('tileW')||'130',10),
-    tileH:parseInt(qs.get('tileH')||'90',10),
+    maxDelay:parseInt(qs.get('maxDelay')||'150',10),
+    tileW:parseInt(qs.get('tileW')||'200',10),
+    tileH:parseInt(qs.get('tileH')||'120',10),
     lowPerf:qs.get('lowPerf')==='1'
   };
 
