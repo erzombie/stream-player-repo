@@ -11,7 +11,10 @@
     --cream:#f7efe0;
     --divider:#e1d6c6;
     --text:#4a2c0a;
-    --fxMs:900ms;                 /* chevron anim time */
+
+    --fxMs:900ms;         /* chevron anim time */
+    --chevH:56px;         /* chevron image height */
+    --pad:8px;            /* inside padding so the tip lands at the edge */
   }
 
   html,body{margin:0;background:transparent}
@@ -32,25 +35,33 @@
   /* value row */
   .value{position:relative;z-index:2;padding:12px 0 14px;font-size:44px;font-weight:900;line-height:1}
 
-  /* FX layer only over number row (inside the box) */
+  /* FX layer covers ONLY the number area (beneath header), so chevrons stay inside */
   .fx{position:absolute;left:0;right:0;top:46px;bottom:0;pointer-events:none;z-index:1}
 
-  .fx img.chev{position:absolute;left:50%;width:56px;opacity:.9;
+  /* Chevrons use absolute "top" so the tip can touch edges precisely */
+  .fx img.chev{position:absolute;left:50%;height:var(--chevH);width:auto;opacity:.9;
                transform:translateX(-50%);filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))}
 
-  /* spawn & travel entirely within the number cell */
-  .animUp  { top:82%; animation:rise var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards; }
-  .animDown{ top:18%; animation:drop var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards; }
-
-  @keyframes rise {
-    0%   { transform:translate(-50%,  0%) scale(.96); opacity:0; }
-    15%  { opacity:1; }
-    100% { transform:translate(-50%,-70%) scale(1);  opacity:0; }
+  /* Up: start at bottom (tip just inside), travel to top (tip just inside) */
+  .animUp{
+    top: calc(100% - var(--pad) - var(--chevH));
+    animation: upMove var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards;
   }
-  @keyframes drop {
-    0%   { transform:translate(-50%,  0%) scale(.96); opacity:0; }
+  @keyframes upMove{
+    0%   { top: calc(100% - var(--pad) - var(--chevH)); opacity:0; }
     15%  { opacity:1; }
-    100% { transform:translate(-50%, 70%) scale(1);  opacity:0; }
+    100% { top: var(--pad);                              opacity:0; }
+  }
+
+  /* Down: start at top, travel to bottom */
+  .animDown{
+    top: var(--pad);
+    animation: downMove var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards;
+  }
+  @keyframes downMove{
+    0%   { top: var(--pad);                              opacity:0; }
+    15%  { opacity:1; }
+    100% { top: calc(100% - var(--pad) - var(--chevH)); opacity:0; }
   }
 
   /* number tween pop (subtle) */
@@ -128,19 +139,13 @@ const totals = {
 };
 for(const k in totals){ $('val_'+k).textContent = totals[k]; }
 
-/* Batch from uma_stat.html:
-   stats=Wit|Wit|Speed
-   amounts=7|7|10
-   theme=up (applies to all; we still respect negative amounts)
-   perMs=400  (optional; default 400)
-   waitMs     (optional explicit override)
-*/
+/* Batch from uma_stat.html */
 const theme  = (qs.get('theme')||'up').toLowerCase();
 const perMs  = parseInt(qs.get('perMs')||'400',10);
 const statsL = (qs.get('stats')||'').split('|').filter(Boolean);
 const amtsL  = (qs.get('amounts')||'').split('|').map(x=>parseInt(x,10)).filter(x=>!Number.isNaN(x));
 
-/* Compute estimated wait time = instances * perMs, unless waitMs is provided */
+/* Estimated wait (unless waitMs is provided) */
 const instances = Math.min(statsL.length, amtsL.length);
 const waitMs    = parseInt(qs.get('waitMs')||'0',10) || (instances * perMs);
 
@@ -151,30 +156,27 @@ for(let i=0;i<instances;i++){
   if(sums.hasOwnProperty(s)) sums[s] += amtsL[i]||0;
 }
 
-/* After wait, apply one tween + chevron per changed stat */
+/* Apply batch */
 function applyBatch(){
   for(const stat in sums){
     const delta = sums[stat];
     if(!delta) continue;
-
     const valEl = $('val_'+stat);
     const fxEl  = $('fx_'+stat);
     if(!valEl || !fxEl) continue;
 
     const target = (parseInt(valEl.textContent||'0',10) + delta);
-    // Chevron direction: negative OR (theme=='down') => down, else up
     const dir = (delta<0 || theme==='down') ? 'down' : 'up';
     spawnChevron(fxEl, dir);
     tweenNumber(valEl, target, 650);
   }
 }
 
-/* Start */
+/* Go */
 setTimeout(applyBatch, waitMs);
 
-/* Demo (optional): ?demo=1 */
+/* Optional demo: ?demo=1 */
 if(qs.get('demo')==='1'){
-  // Simulate: Wit+7, Wit+7, Speed+10  => wait 3*400ms = 1200ms
   setTimeout(()=>location.search='?stats=Wit|Wit|Speed&amounts=7|7|10&theme=up&perMs=400&demoOff=1',100);
 }
 </script>
