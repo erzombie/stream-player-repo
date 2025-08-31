@@ -1,76 +1,65 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Uma Stat Bar Overlay</title>
-  <style>
-    :root{
-      --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
-      --num:#4a2c0a;
-      --header:#3b2412;
-      --cream:#f7efe2;
-      --divider:#d8cbb6;
-      --fxMs:900ms;         /* chevron duration */
-    }
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Uma Stat Bar</title>
+<style>
+  :root{
+    --font:'Roboto',system-ui,-apple-system,'Segoe UI',Arial,sans-serif;
+    --brown:#3a2818;
+    --cream:#f7efe0;
+    --divider:#e1d6c6;
+    --text:#4a2c0a;
+    --fxMs:900ms;                 /* chevron anim time */
+  }
 
-    html,body{margin:0;background:transparent}
-    body{font-family:var(--font);color:var(--num)}
+  html,body{margin:0;background:transparent}
+  body{font-family:var(--font);color:var(--text);display:flex;justify-content:center}
 
-    #barWrapper{
-      display:flex;gap:0;margin:20px auto;width:max-content;
-      border-radius:12px;overflow:hidden;box-shadow:0 10px 24px rgba(0,0,0,.25);
-    }
+  /* bar */
+  #bar{display:flex;gap:0;border-radius:14px;overflow:hidden;
+       box-shadow:0 12px 26px rgba(0,0,0,.25); margin:18px auto}
 
-    .stat{
-      position:relative;display:flex;flex-direction:column;align-items:center;
-      background:var(--cream);border-right:1px solid var(--divider);
-      min-width:140px;overflow:hidden; /* clip chevron inside */
-    }
-    .stat:last-child{border-right:none}
+  .stat{position:relative;min-width:160px;background:var(--cream);
+        border-right:1px solid var(--divider); text-align:center}
+  .stat:last-child{border-right:none}
 
-    /* label row (PNG on dark strip) */
-    .label{width:100%;height:34px;display:flex;align-items:center;justify-content:center;background:var(--header)}
-    .label img{height:100%;width:auto;display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.25))}
+  /* header label (PNG) */
+  .label{background:var(--brown);height:46px;display:flex;align-items:center;justify-content:center}
+  .label img{height:70%;width:auto;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.25))}
 
-    /* number row (no slide; only tween digits) */
-    .value{
-      position:relative;z-index:4;
-      font-weight:900;font-size:32px;line-height:1;
-      padding:10px 0 12px; text-align:center; min-width:80px;
-    }
-    .value.pop{animation:valPop .45s ease-out}
-    @keyframes valPop{0%{transform:scale(.92)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+  /* value row */
+  .value{position:relative;z-index:2;padding:12px 0 14px;font-size:44px;font-weight:900;line-height:1}
 
-    /* FX (chevron) */
-    .fx{position:absolute;left:0;right:0;top:34px;bottom:0;pointer-events:none;z-index:3}
-    .fx img.chev{
-      position:absolute;left:50%;top:50%;
-      transform:translate(-50%,-50%);
-      height:46px;opacity:.9;filter:drop-shadow(0 8px 18px rgba(0,0,0,.35));
-    }
-    
-    @keyframes rise{
-      0%{transform:translate(-50%,-10%) scale(.92);opacity:0}
-      20%{opacity:1}
-      80%{transform:translate(-50%,-110%) scale(1.04);opacity:1}
-      100%{transform:translate(-50%,-150%) scale(1);opacity:0}
-    }
-    @keyframes drop{
-      0%{transform:translate(-50%,-90%) scale(.92);opacity:0}
-      20%{opacity:1}
-      80%{transform:translate(-50%,25%) scale(1.04);opacity:1}
-      100%{transform:translate(-50%,70%) scale(1);opacity:0}
-    }
-    /* spawn point for up */
-    .animUp{ top:70%; animation:rise var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards; }
-    /* spawn point for down */
-    .animDown{ top:20%; animation:drop var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards; }
+  /* FX layer only over number row (inside the box) */
+  .fx{position:absolute;left:0;right:0;top:46px;bottom:0;pointer-events:none;z-index:1}
 
-  </style>
+  .fx img.chev{position:absolute;left:50%;width:56px;opacity:.9;
+               transform:translateX(-50%);filter:drop-shadow(0 8px 18px rgba(0,0,0,.35))}
+
+  /* spawn & travel entirely within the number cell */
+  .animUp  { top:82%; animation:rise var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards; }
+  .animDown{ top:18%; animation:drop var(--fxMs) cubic-bezier(.2,.9,.2,1) forwards; }
+
+  @keyframes rise {
+    0%   { transform:translate(-50%,  0%) scale(.96); opacity:0; }
+    15%  { opacity:1; }
+    100% { transform:translate(-50%,-70%) scale(1);  opacity:0; }
+  }
+  @keyframes drop {
+    0%   { transform:translate(-50%,  0%) scale(.96); opacity:0; }
+    15%  { opacity:1; }
+    100% { transform:translate(-50%, 70%) scale(1);  opacity:0; }
+  }
+
+  /* number tween pop (subtle) */
+  .pop{animation:valPop .45s ease-out}
+  @keyframes valPop{0%{transform:scale(.96)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+</style>
 </head>
 <body>
-  <div id="barWrapper">
+  <div id="bar">
     <div class="stat" id="s_Speed">
       <div class="label"><img src="https://erzombie.github.io/stream-player-repo/uma_overlay/bar_speed.png" alt="Speed"></div>
       <div class="value" id="val_Speed">0</div>
@@ -98,97 +87,96 @@
     </div>
   </div>
 
-  <script>
-    // chevrons
-    const CHEV_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
-    const CHEV_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
+<script>
+/* Assets */
+const CHEV_UP   = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_pos_chevron.png';
+const CHEV_DOWN = 'https://erzombie.github.io/stream-player-repo/uma_overlay/uma_neg_chevron.png';
 
-    // per-stat tween state with merging
-    const state = {
-      Speed:   { cur:0, target:0, raf:null, t0:0, dur:900 },
-      Stamina: { cur:0, target:0, raf:null, t0:0, dur:900 },
-      Power:   { cur:0, target:0, raf:null, t0:0, dur:900 },
-      Guts:    { cur:0, target:0, raf:null, t0:0, dur:900 },
-      Wit:     { cur:0, target:0, raf:null, t0:0, dur:900 },
-    };
+/* Helpers */
+const $ = (id)=>document.getElementById(id);
+function tweenNumber(el, target, dur=650){
+  const start = parseInt(el.textContent||'0',10);
+  const diff  = target - start;
+  if(!diff){ el.textContent = target; return; }
+  const t0 = performance.now();
+  function step(t){
+    const p = Math.min(1,(t-t0)/dur);
+    const e = 1 - Math.pow(1-p,3);               // easeOutCubic
+    el.textContent = Math.round(start + diff*e);
+    if(p<1) requestAnimationFrame(step); else { el.textContent = target; el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop'); }
+  }
+  requestAnimationFrame(step);
+}
+function spawnChevron(fxEl, dir){                // dir = 'up' | 'down'
+  const im = new Image();
+  im.src = (dir==='down') ? CHEV_DOWN : CHEV_UP;
+  im.className = (dir==='down') ? 'chev animDown' : 'chev animUp';
+  fxEl.appendChild(im);
+  setTimeout(()=>im.remove(), 900);
+}
 
-    // init from query (?speed=…&stamina=…)
-    const qs = new URLSearchParams(location.search);
-    for (const k of Object.keys(state)){
-      const v = parseInt(qs.get(k.toLowerCase()) || '0', 10);
-      state[k].cur = state[k].target = isNaN(v) ? 0 : v;
-      document.getElementById('val_'+k).textContent = state[k].cur;
-    }
+/* Query parsing */
+const qs = new URLSearchParams(location.search);
 
-    function spawnChevron(stat, theme){
-      const fx = document.getElementById('fx_'+stat);
-      const img = new Image();
-      img.src = (theme === 'down' ? CHEV_DOWN : CHEV_UP);
-      img.className = 'chev ' + (theme === 'down' ? 'animDown' : 'animUp');
-      fx.appendChild(img);
-      setTimeout(()=> img.remove(), 950);
-    }
+/* Initial totals (optional) */
+const totals = {
+  Speed:   parseInt(qs.get('speed')   || '0',10),
+  Stamina: parseInt(qs.get('stamina') || '0',10),
+  Power:   parseInt(qs.get('power')   || '0',10),
+  Guts:    parseInt(qs.get('guts')    || '0',10),
+  Wit:     parseInt(qs.get('wit')     || '0',10),
+};
+for(const k in totals){ $('val_'+k).textContent = totals[k]; }
 
-    function tick(stat){
-      const s = state[stat];
-      const el = document.getElementById('val_'+stat);
-      const now = performance.now();
-      const p = Math.min(1, (now - s.t0) / s.dur);
-      const e = 1 - Math.pow(1 - p, 3);       // easeOutCubic
-      const val = Math.round(s.start + (s.target - s.start) * e);
-      s.cur = val;
-      el.textContent = val;
+/* Batch from uma_stat.html:
+   stats=Wit|Wit|Speed
+   amounts=7|7|10
+   theme=up (applies to all; we still respect negative amounts)
+   perMs=400  (optional; default 400)
+   waitMs     (optional explicit override)
+*/
+const theme  = (qs.get('theme')||'up').toLowerCase();
+const perMs  = parseInt(qs.get('perMs')||'400',10);
+const statsL = (qs.get('stats')||'').split('|').filter(Boolean);
+const amtsL  = (qs.get('amounts')||'').split('|').map(x=>parseInt(x,10)).filter(x=>!Number.isNaN(x));
 
-      if (p < 1){
-        s.raf = requestAnimationFrame(()=>tick(stat));
-      } else {
-        // finished; if target changed during tween we immediately retarget
-        if (s.target !== val){
-          s.start = val; s.t0 = performance.now();
-          s.raf = requestAnimationFrame(()=>tick(stat));
-        } else {
-          s.raf = null;
-          el.classList.remove('pop'); void el.offsetWidth; el.classList.add('pop');
-        }
-      }
-    }
+/* Compute estimated wait time = instances * perMs, unless waitMs is provided */
+const instances = Math.min(statsL.length, amtsL.length);
+const waitMs    = parseInt(qs.get('waitMs')||'0',10) || (instances * perMs);
 
-    // Public: apply a delta (this is what Streamer.bot should call logically
-    // at the same time you fire uma_stat.html)
-    function applyDelta(stat, delta, theme='up'){
-      const s = state[stat]; if (!s) return;
-      // merge: push new target; if tween is idle start one
-      s.start = s.cur;
-      s.target += delta;
-      s.t0 = performance.now();
-      if (!s.raf) s.raf = requestAnimationFrame(()=>tick(stat));
-      spawnChevron(stat, (delta < 0 || theme==='down') ? 'down' : 'up');
-    }
+/* Sum by stat */
+const sums = {Speed:0,Stamina:0,Power:0,Guts:0,Wit:0};
+for(let i=0;i<instances;i++){
+  const s = (statsL[i]||'').trim();
+  if(sums.hasOwnProperty(s)) sums[s] += amtsL[i]||0;
+}
 
-    // postMessage API (so you can broadcast the same event to this overlay)
-    // window.postMessage({ type:'umaDelta', stat:'Speed', delta: +7, theme:'up' })
-    window.addEventListener('message',(e)=>{
-      const m = e.data || {};
-      if (m.type === 'umaDelta' && m.stat && typeof m.delta !== 'undefined'){
-        applyDelta(m.stat, Number(m.delta), m.theme || (Number(m.delta) < 0 ? 'down' : 'up'));
-      }
-    });
+/* After wait, apply one tween + chevron per changed stat */
+function applyBatch(){
+  for(const stat in sums){
+    const delta = sums[stat];
+    if(!delta) continue;
 
-    // optional demo: ?demo=1 shows two quick stacked deltas on Speed
-    if (qs.get('demo') === '1'){
-      setTimeout(()=>applyDelta('Speed',  96, 'up'),   500);
-      setTimeout(()=>applyDelta('Stamina',50, 'up'),  900);
-      setTimeout(()=>applyDelta('Power',  20, 'up'), 1300);
-      setTimeout(()=>applyDelta('Guts',  -40, 'down'),1700);
-      setTimeout(()=>applyDelta('Wit',   -30, 'down'),2100);
+    const valEl = $('val_'+stat);
+    const fxEl  = $('fx_'+stat);
+    if(!valEl || !fxEl) continue;
 
-      // stacked hits to show merge behavior
-      setTimeout(()=>applyDelta('Speed', +7, 'up'),  750);
-      setTimeout(()=>applyDelta('Speed', +5, 'up'),  820);
-    }
+    const target = (parseInt(valEl.textContent||'0',10) + delta);
+    // Chevron direction: negative OR (theme=='down') => down, else up
+    const dir = (delta<0 || theme==='down') ? 'down' : 'up';
+    spawnChevron(fxEl, dir);
+    tweenNumber(valEl, target, 650);
+  }
+}
 
-    // Expose for OBS “Execute JS” (optional)
-    window.UmaBar = { applyDelta };
-  </script>
+/* Start */
+setTimeout(applyBatch, waitMs);
+
+/* Demo (optional): ?demo=1 */
+if(qs.get('demo')==='1'){
+  // Simulate: Wit+7, Wit+7, Speed+10  => wait 3*400ms = 1200ms
+  setTimeout(()=>location.search='?stats=Wit|Wit|Speed&amounts=7|7|10&theme=up&perMs=400&demoOff=1',100);
+}
+</script>
 </body>
 </html>
